@@ -1,0 +1,22 @@
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mongodb-db
+    environment:
+      MONGO_INITDB_DATABASE: getfit
+      MONGO_INITDB_ROOT_USERNAME: faust
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+    networks:
+      - backend
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+volumes:
+  db-data:
+  mongo-data:
+
+networks:
+  backend:
+    driver: bridge

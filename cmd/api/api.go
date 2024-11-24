@@ -47,9 +47,14 @@ func (app *application) mount() *fiber.App {
 	// Exercise Routes
 	exercises := api.Group("/exercises")
 	exercises.Post("/", app.createExerciseHandler)
-	// exercises.Route("/:exerciseID", func(router fiber.Router) {
-	// 	exercise.Get("/", app.getExerciseHandler)
+	// exercises.Route("/:exerciseName", func(router fiber.Router) {
+	// 	exercises.Get("/", app.getExerciseHandler)
 	// })
+
+	users := api.Group("/users")
+	users.Post("/", app.createUserHandler)
+	users.Delete("/:userID", app.deleteUserHandler)
+	users.Patch("/:userID", app.patchUserHandler)
 
 	return fiberApp
 }
