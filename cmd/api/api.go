@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/FaustCelaj/GetFit.git/internal/store"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -10,11 +11,19 @@ import (
 
 type application struct {
 	config config
-	addr   string
+	store  store.Storage
 }
 
 type config struct {
 	addr string
+	db   dbConfig
+	env  string
+}
+
+type dbConfig struct {
+	addr         string
+	maxOpenConns int
+	maxIdleTime  string
 }
 
 func (app *application) mount() *fiber.App {
@@ -36,8 +45,11 @@ func (app *application) mount() *fiber.App {
 	api.Get("/", app.healthCheckHandler)
 
 	// Exercise Routes
-	// exercises := api.Group("/exercises")
-	// exercises.Exercise("/", app.createExerciseHandler)
+	exercises := api.Group("/exercises")
+	exercises.Post("/", app.createExerciseHandler)
+	// exercises.Route("/:exerciseID", func(router fiber.Router) {
+	// 	exercise.Get("/", app.getExerciseHandler)
+	// })
 
 	return fiberApp
 }
