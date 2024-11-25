@@ -46,15 +46,24 @@ func (app *application) mount() *fiber.App {
 
 	// Exercise Routes
 	exercises := api.Group("/exercises")
+	// creating a custom exercise
 	exercises.Post("/", app.createExerciseHandler)
-	// exercises.Route("/:exerciseName", func(router fiber.Router) {
-	// 	exercises.Get("/", app.getExerciseHandler)
-	// })
 
 	users := api.Group("/users")
 	users.Post("/", app.createUserHandler)
-	users.Delete("/:userID", app.deleteUserHandler)
 	users.Patch("/:userID", app.patchUserHandler)
+	users.Delete("/:userID", app.deleteUserHandler)
+
+	// Routine Exercise Routes
+	routineExercises := api.Group("/:userID/routineExercises")
+	routineExercises.Post("/", app.createRoutineExerciseHandler)
+	routineExercises.Get("/:routineExerciseID", app.getRoutineExerciseByIDHandler)
+	routineExercises.Patch("/:routineExerciseID", app.updateRoutineExerciseHandler)
+
+	// Sets Routes
+	exerciseSets := api.Group("/:routineExerciseID")
+	// Add a set to a specific RoutineExercise
+	exerciseSets.Post("/", app.addExerciseSetHandler)
 
 	return fiberApp
 }

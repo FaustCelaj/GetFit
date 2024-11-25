@@ -16,20 +16,30 @@ var (
 )
 
 type Storage struct {
-	Exercises interface {
-		Create(context.Context, *Exercise) error
-	}
 	Users interface {
 		Create(context.Context, *User) error
 		GetById(context.Context, primitive.ObjectID) (*User, error)
 		Update(context.Context, primitive.ObjectID, map[string]interface{}) error
 		Delete(context.Context, primitive.ObjectID) error
 	}
+	RoutineExercise interface {
+		Create(context.Context, *RoutineExercise, primitive.ObjectID, primitive.ObjectID) error
+		GetByID(context.Context, primitive.ObjectID) (*RoutineExercise, error)
+	}
+	Exercises interface {
+		Create(context.Context, *Exercise) error
+	}
+	ExerciseSet interface {
+		AddSet(context.Context, *ExerciseSet, primitive.ObjectID) error
+		AddMultipleSet(context.Context, []ExerciseSet, primitive.ObjectID) error
+	}
 }
 
 func NewMongoDBStorage(db *mongo.Database) Storage {
 	return Storage{
-		Exercises: &ExerciseStore{db},
-		Users:     &UserStore{db},
+		Users:           &UserStore{db},
+		RoutineExercise: &RoutineExerciseStore{db},
+		Exercises:       &ExerciseStore{db},
+		ExerciseSet:     &ExerciseSetStore{db},
 	}
 }

@@ -9,15 +9,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// this shoudldnt have any access for users to manipulate
+// TODO: consider this struct for custom exerscies that are unique to them?
 type Exercise struct {
-	ID           primitive.ObjectID `bson:"_id" json:"id"`
-	Name         string             `bson:"name" json:"name"`
-	ExerciseType string             `bson:"exercise_type" json:"exercise_type"`
-	Muscle       string             `bson:"muscle" json:"muscle"`
-	Equipment    string             `bson:"equipment" json:"equipment"`
-	Difficulty   string             `bson:"difficulty" json:"difficulty"`
-	Instructions string             `bson:"instructions" json:"instructions"`
-	CreatedAt    time.Time          `bson:"created_at" json:"created_at"`
+	ID               primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name             string             `bson:"name" json:"name"`
+	Force            *string            `bson:"force,omitempty" json:"force,omitempty"`                       // Nullable, string or null
+	Level            *string            `bson:"level,omitempty" json:"level,omitempty"`                       // Nullable, string or null
+	Mechanic         *string            `bson:"mechanic,omitempty" json:"mechanic,omitempty"`                 // Nullable
+	Equipment        *string            `bson:"equipment,omitempty" json:"equipment,omitempty"`               // Nullable
+	PrimaryMuscles   *[]string          `bson:"primaryMuscles,omitempty" json:"primaryMuscles,omitempty"`     // Nullable array
+	SecondaryMuscles *[]string          `bson:"secondaryMuscles,omitempty" json:"secondaryMuscles,omitempty"` // Nullable array
+	Instructions     *[]string          `bson:"instructions,omitempty" json:"instructions,omitempty"`         // Nullable array
+	Category         string             `bson:"category" json:"category"`                                     // Required
+	CreatedAt        time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt        time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
 type ExerciseStore struct {
