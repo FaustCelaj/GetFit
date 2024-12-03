@@ -4,6 +4,7 @@ import (
 	"github.com/FaustCelaj/GetFit.git/internal/store"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // CREATE Handler
@@ -28,10 +29,41 @@ func (app *application) createUserHandler(c *fiber.Ctx) error {
 	})
 }
 
-// // GET Handler
-// func (app *application) getUserHandler(c *fiber.Ctx) error {
-// 	return nil
-// }
+// GET Handler
+func (app *application) getUserHandler(c *fiber.Ctx) error {
+	// Get the userID from the URL parameter
+	userIDStr := c.Params("userID")
+	if userIDStr == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "userID is required",
+		})
+	}
+
+	// Convert the userID to primitive.ObjectID
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid user ID format",
+		})
+	}
+
+	// Fetch the user from the database
+	user, err := app.store.Users.GetByID(c.Context(), userID)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "user not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "failed to fetch user",
+			"details": err.Error(),
+		})
+	}
+
+	// Return the user
+	return c.Status(fiber.StatusOK).JSON(user)
+}
 
 type updateUserPayload struct {
 	Username *string `json:"username"`

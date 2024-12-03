@@ -11,12 +11,13 @@ import (
 )
 
 type User struct {
-	ID        primitive.ObjectID `bson:"_id" json:"id"`
-	Username  string             `bson:"username" json:"username"`
-	Email     string             `bson:"email" json:"email"`
-	Password  string             `bson:"password_hash" json:"password_hash"`
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
+	ID        primitive.ObjectID   `bson:"_id" json:"id"`
+	Username  string               `bson:"username" json:"username"`
+	Email     string               `bson:"email" json:"email"`
+	Password  string               `bson:"password_hash" json:"password_hash"`
+	Routines  []primitive.ObjectID `bson:"routines" json:"routines"`
+	CreatedAt time.Time            `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time            `bson:"updated_at" json:"updated_at"`
 }
 
 type UserStore struct {
@@ -26,7 +27,7 @@ type UserStore struct {
 const userCollection = "user"
 
 // GET user by ID
-func (s *UserStore) GetById(ctx context.Context, userID primitive.ObjectID) (*User, error) {
+func (s *UserStore) GetByID(ctx context.Context, userID primitive.ObjectID) (*User, error) {
 	user := &User{}
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -47,6 +48,7 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 	user.ID = primitive.NewObjectID()
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
+	user.Routines = []primitive.ObjectID{}
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

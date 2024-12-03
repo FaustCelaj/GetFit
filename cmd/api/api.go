@@ -45,25 +45,30 @@ func (app *application) mount() *fiber.App {
 	api.Get("/", app.healthCheckHandler)
 
 	// Exercise Routes
-	exercises := api.Group("/exercises")
+	exercise := api.Group("/exercise")
 	// creating a custom exercise
-	exercises.Post("/", app.createExerciseHandler)
+	exercise.Post("/", app.createExerciseHandler)
 
-	users := api.Group("/users")
-	users.Post("/", app.createUserHandler)
-	users.Patch("/:userID", app.patchUserHandler)
-	users.Delete("/:userID", app.deleteUserHandler)
+	user := api.Group("/user")
+	user.Get("/:userID", app.getUserHandler)       //✅
+	user.Post("/", app.createUserHandler)          //✅
+	user.Patch("/:userID", app.patchUserHandler)   //✅
+	user.Delete("/:userID", app.deleteUserHandler) //✅
 
-	// Routine Exercise Routes
-	routineExercises := api.Group("/:userID/routineExercises")
-	routineExercises.Post("/", app.createRoutineExerciseHandler)
-	routineExercises.Get("/:routineExerciseID", app.getRoutineExerciseByIDHandler)
-	routineExercises.Patch("/:routineExerciseID", app.updateRoutineExerciseHandler)
+	// Routine Routes
+	routine := api.Group("/:userID/routine")
+	routine.Post("/", app.createRoutineHandler) //✅
+	// Fetch all routines by userID
+	routine.Get("/", app.getRoutinesByUserIDHandler) //✅
+	// returns a single routine
+	routine.Get("/:routineID", app.getRoutineByIDHandler) //✅
+	// Delete a single routine
+	routine.Delete("/:routineID", app.deleteRoutineHandler)
 
 	// Sets Routes
-	exerciseSets := api.Group("/:routineExerciseID")
+	// set := api.Group("/:routineID")
 	// Add a set to a specific RoutineExercise
-	exerciseSets.Post("/", app.addExerciseSetHandler)
+	// set.Post("/", app.addSetHandler)
 
 	return fiberApp
 }
