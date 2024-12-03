@@ -18,28 +18,31 @@ var (
 type Storage struct {
 	Users interface {
 		Create(context.Context, *User) error
-		GetById(context.Context, primitive.ObjectID) (*User, error)
+		GetByID(context.Context, primitive.ObjectID) (*User, error)
 		Update(context.Context, primitive.ObjectID, map[string]interface{}) error
 		Delete(context.Context, primitive.ObjectID) error
 	}
-	RoutineExercise interface {
-		Create(context.Context, *RoutineExercise, primitive.ObjectID, primitive.ObjectID) error
-		GetByID(context.Context, primitive.ObjectID) (*RoutineExercise, error)
+	Routine interface {
+		Create(context.Context, *Routine, primitive.ObjectID) error
+		GetByUserID(context.Context, primitive.ObjectID) ([]*Routine, error)
+		GetByIDAndUserID(context.Context, primitive.ObjectID, primitive.ObjectID) (*Routine, error)
+		Update(context.Context, primitive.ObjectID, map[string]interface{}) error
+		Delete(context.Context, primitive.ObjectID, primitive.ObjectID) error
 	}
 	Exercises interface {
 		Create(context.Context, *Exercise) error
 	}
-	ExerciseSet interface {
-		AddSet(context.Context, *ExerciseSet, primitive.ObjectID) error
-		AddMultipleSet(context.Context, []ExerciseSet, primitive.ObjectID) error
+	Set interface {
+		AddSet(context.Context, *Set, primitive.ObjectID, primitive.ObjectID) error
+		AddMultipleSet(context.Context, []Set, primitive.ObjectID, primitive.ObjectID) error
 	}
 }
 
 func NewMongoDBStorage(db *mongo.Database) Storage {
 	return Storage{
-		Users:           &UserStore{db},
-		RoutineExercise: &RoutineExerciseStore{db},
-		Exercises:       &ExerciseStore{db},
-		ExerciseSet:     &ExerciseSetStore{db},
+		Users:     &UserStore{db},
+		Routine:   &RoutineStore{db},
+		Exercises: &ExerciseStore{db},
+		Set:       &SetStore{db},
 	}
 }
