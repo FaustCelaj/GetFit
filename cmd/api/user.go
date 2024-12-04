@@ -66,8 +66,9 @@ func (app *application) getUserHandler(c *fiber.Ctx) error {
 }
 
 type updateUserPayload struct {
-	Username *string `json:"username"`
-	Email    *string `json:"email"`
+	Username        *string `json:"username"`
+	Email           *string `json:"email"`
+	ExpectedVersion int16   `json:"expected_version"`
 }
 
 // PATCH Handler
@@ -89,6 +90,13 @@ func (app *application) patchUserHandler(c *fiber.Ctx) error {
 		})
 	}
 
+	// validate version
+	if payload.ExpectedVersion == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Current version is required",
+		})
+	}
+
 	// Build the updates map dynamically
 	updates := make(map[string]interface{})
 	if payload.Username != nil {
@@ -106,7 +114,7 @@ func (app *application) patchUserHandler(c *fiber.Ctx) error {
 	}
 
 	// Perform the update in the database
-	if err := app.store.Users.Update(c.Context(), userID, updates); err != nil {
+	if err := app.store.Users.Update(c.Context(), userID, updates, payload.ExpectedVersion); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update user",
 		})

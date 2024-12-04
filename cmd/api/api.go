@@ -57,13 +57,16 @@ func (app *application) mount() *fiber.App {
 
 	// Routine Routes
 	routine := api.Group("/:userID/routine")
+	// create a routine
 	routine.Post("/", app.createRoutineHandler) //✅
 	// Fetch all routines by userID
 	routine.Get("/", app.getRoutinesByUserIDHandler) //✅
 	// returns a single routine
 	routine.Get("/:routineID", app.getRoutineByIDHandler) //✅
+	// Update a single routine
+	routine.Patch("/:routineID", app.patchRoutineHandler)
 	// Delete a single routine
-	routine.Delete("/:routineID", app.deleteRoutineHandler)
+	routine.Delete("/:routineID", app.deleteRoutineHandler) //✅
 
 	// Sets Routes
 	// set := api.Group("/:routineID")

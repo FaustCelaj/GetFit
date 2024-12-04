@@ -17,8 +17,8 @@ type Routine struct {
 	Description *string              `bson:"description,omitempty" json:"description,omitempty"`
 	ExerciseID  []primitive.ObjectID `bson:"exercise_id" json:"exercise_id"`
 	Version     int16                `bson:"version" json:"version"`
-	// CreatedAt   primitive.Timestamp
-	// updateAt    primitive.Timestamp
+	CreatedAt   time.Time            `bson:"created_at" json:"created_at"`
+	UpdatedAt   time.Time            `bson:"updated_at" json:"updated_at"`
 }
 
 type RoutineStore struct {
@@ -41,6 +41,8 @@ func (s *RoutineStore) Create(ctx context.Context, routine *Routine, userID prim
 
 	// assigning an ID
 	routine.ID = primitive.NewObjectID()
+	routine.CreatedAt = time.Now()
+	routine.UpdatedAt = time.Now()
 
 	// setting the version number
 	if routine.Version == 0 {
@@ -69,7 +71,8 @@ func (s *RoutineStore) Create(ctx context.Context, routine *Routine, userID prim
 	return nil
 }
 
-// Get routines by userID
+// fetch all routines from a specified user
+// returns an array of routines
 func (s *RoutineStore) GetByUserID(ctx context.Context, userID primitive.ObjectID) ([]*Routine, error) {
 	var routines []*Routine
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -91,6 +94,7 @@ func (s *RoutineStore) GetByUserID(ctx context.Context, userID primitive.ObjectI
 }
 
 // Get a routine by routineID and userID
+// returns a single routine to match specified userID and routineID
 func (s *RoutineStore) GetByIDAndUserID(ctx context.Context, routineID, userID primitive.ObjectID) (*Routine, error) {
 	routine := &Routine{}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -112,11 +116,15 @@ func (s *RoutineStore) GetByIDAndUserID(ctx context.Context, routineID, userID p
 }
 
 // update a routine
-func (s *RoutineStore) Update(ctx context.Context, routineID primitive.ObjectID, updates map[string]interface{}) error {
+func (s *RoutineStore) Update(ctx context.Context, routineID, userID primitive.ObjectID, updates map[string]interface{}, expectedVersion int16) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"_id": routineID}
+	filter := bson.M{
+		"_id":     routineID,
+		"user_id": userID,
+		"version": expectedVersion,
+	}
 
 	updateFields := bson.M{}
 	if exercises, ok := updates["exercise_id"]; ok {
@@ -132,6 +140,7 @@ func (s *RoutineStore) Update(ctx context.Context, routineID primitive.ObjectID,
 
 	update := bson.M{
 		"$set": updateFields,
+		"$inc": bson.M{"version": 1},
 	}
 
 	result, err := s.db.Collection(routineCollection).UpdateOne(ctx, filter, update)
