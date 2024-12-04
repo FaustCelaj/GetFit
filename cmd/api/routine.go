@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/FaustCelaj/GetFit.git/internal/store"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -55,6 +57,8 @@ func (app *application) createRoutineHandler(c *fiber.Ctx) error {
 	})
 }
 
+// fetch all routines from a specified user
+// returns an array of routines
 func (app *application) getRoutinesByUserIDHandler(c *fiber.Ctx) error {
 	userID := c.Params("userID")
 	if userID == "" {
@@ -86,6 +90,7 @@ func (app *application) getRoutinesByUserIDHandler(c *fiber.Ctx) error {
 	})
 }
 
+// fetch routine bny routine ID (returns a single routine)
 func (app *application) getRoutineByIDHandler(c *fiber.Ctx) error {
 	userIDStr := c.Params("userID")
 	routineIDStr := c.Params("routineID")
@@ -123,6 +128,89 @@ func (app *application) getRoutineByIDHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Routine retrieved successfully",
 		"routine": routine,
+	})
+}
+
+type updateRoutinePayload struct {
+	Title           *string   `json:"title"`
+	Description     *string   `json:"description"`
+	ExerciseID      *[]string `json:"exercise_id"`
+	ExpectedVersion int16     `json:"expected_version"`
+}
+
+// update a specific routine by ID and user ID for validation
+func (app *application) patchRoutineHandler(c *fiber.Ctx) error {
+	userIDStr := c.Params("userID")
+	routineIDStr := c.Params("routineID")
+
+	// Validate and convert userID
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid userID format",
+		})
+	}
+
+	// Validate and convert routineID
+	routineID, err := primitive.ObjectIDFromHex(routineIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid routineID format",
+		})
+	}
+
+	var payload updateRoutinePayload
+	// validate payload
+	if err := c.BodyParser(&payload); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request body",
+		})
+	}
+	// validate version
+	if payload.ExpectedVersion == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Current version is required",
+		})
+	}
+
+	updates := make(map[string]interface{})
+	if payload.Title != nil {
+		updates["title"] = &payload.Title
+	}
+	if payload.Description != nil {
+		updates["description"] = &payload.Description
+	}
+	// converting and appending the exerciseID's
+	if payload.ExerciseID != nil {
+		exerciseIDs := []primitive.ObjectID{}
+		for _, id := range *payload.ExerciseID {
+			objID, err := primitive.ObjectIDFromHex(id)
+			if err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": fmt.Sprintf("Invalid exercise ID format: %s", id),
+				})
+			}
+			exerciseIDs = append(exerciseIDs, objID)
+		}
+		updates["exercise_id"] = exerciseIDs
+	}
+
+	if len(updates) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "No fields to update",
+		})
+	}
+
+	// Perform the update in the database
+	if err := app.store.Routine.Update(c.Context(), routineID, userID, updates, payload.ExpectedVersion); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update routine",
+		})
+	}
+
+	// Return a success response
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Routine updated successfully",
 	})
 }
 

@@ -16,6 +16,7 @@ type User struct {
 	Email     string               `bson:"email" json:"email"`
 	Password  string               `bson:"password_hash" json:"password_hash"`
 	Routines  []primitive.ObjectID `bson:"routines" json:"routines"`
+	Version   int16                `bson:"version" json:"version"`
 	CreatedAt time.Time            `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time            `bson:"updated_at" json:"updated_at"`
 }
@@ -50,6 +51,11 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 	user.UpdatedAt = time.Now()
 	user.Routines = []primitive.ObjectID{}
 
+	// setting the version number
+	if user.Version == 0 {
+		user.Version = 1
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -62,12 +68,22 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 }
 
 // UPDATING user
-func (s *UserStore) Update(ctx context.Context, userID primitive.ObjectID, updates map[string]interface{}) error {
+func (s *UserStore) Update(ctx context.Context, userID primitive.ObjectID, updates map[string]interface{}, expectedVersion int16) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"_id": userID}
-	update := bson.M{"$set": updates}
+	filter := bson.M{"_id": userID, "version": expectedVersion}
+
+	updateFields := bson.M{}
+	if username, ok := updates["username"]; ok {
+		updateFields["username"] = username
+	}
+	if email, ok := updates["email"]; ok {
+		updateFields["email"] = email
+	}
+	updateFields["updated_at"] = time.Now()
+
+	update := bson.M{"$set": updateFields, "$inc": bson.M{"version": 1}}
 
 	// Perform the update
 	_, err := s.db.Collection(userCollection).UpdateOne(ctx, filter, update)
