@@ -59,7 +59,7 @@ func (app *application) createRoutineHandler(c *fiber.Ctx) error {
 
 // fetch all routines from a specified user
 // returns an array of routines
-func (app *application) getRoutinesByUserIDHandler(c *fiber.Ctx) error {
+func (app *application) getAllUserRoutinesIDHandler(c *fiber.Ctx) error {
 	userID := c.Params("userID")
 	if userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -76,7 +76,7 @@ func (app *application) getRoutinesByUserIDHandler(c *fiber.Ctx) error {
 	}
 
 	// Call the storage layer to retrieve routines
-	routines, err := app.store.Routine.GetByUserID(c.Context(), userObjectID)
+	routines, err := app.store.Routine.GetAllUserRoutines(c.Context(), userObjectID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "failed to fetch routines",
@@ -90,7 +90,7 @@ func (app *application) getRoutinesByUserIDHandler(c *fiber.Ctx) error {
 	})
 }
 
-// fetch routine bny routine ID (returns a single routine)
+// fetch routine by routine ID (returns a single routine)
 func (app *application) getRoutineByIDHandler(c *fiber.Ctx) error {
 	userIDStr := c.Params("userID")
 	routineIDStr := c.Params("routineID")
@@ -112,7 +112,7 @@ func (app *application) getRoutineByIDHandler(c *fiber.Ctx) error {
 	}
 
 	// Retrieve routine using the storage layer
-	routine, err := app.store.Routine.GetByIDAndUserID(c.Context(), routineID, userID)
+	routine, err := app.store.Routine.GetByID(c.Context(), routineID, userID)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{

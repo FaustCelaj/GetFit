@@ -73,7 +73,7 @@ func (s *RoutineStore) Create(ctx context.Context, routine *Routine, userID prim
 
 // fetch all routines from a specified user
 // returns an array of routines
-func (s *RoutineStore) GetByUserID(ctx context.Context, userID primitive.ObjectID) ([]*Routine, error) {
+func (s *RoutineStore) GetAllUserRoutines(ctx context.Context, userID primitive.ObjectID) ([]*Routine, error) {
 	var routines []*Routine
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -95,7 +95,7 @@ func (s *RoutineStore) GetByUserID(ctx context.Context, userID primitive.ObjectI
 
 // Get a routine by routineID and userID
 // returns a single routine to match specified userID and routineID
-func (s *RoutineStore) GetByIDAndUserID(ctx context.Context, routineID, userID primitive.ObjectID) (*Routine, error) {
+func (s *RoutineStore) GetByID(ctx context.Context, routineID, userID primitive.ObjectID) (*Routine, error) {
 	routine := &Routine{}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
