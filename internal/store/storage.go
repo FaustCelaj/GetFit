@@ -37,8 +37,13 @@ type Storage struct {
 		Delete(context.Context, primitive.ObjectID, primitive.ObjectID) error
 	}
 	Set interface {
-		AddSet(context.Context, *Set, primitive.ObjectID, primitive.ObjectID) error
-		AddMultipleSet(context.Context, []Set, primitive.ObjectID, primitive.ObjectID) error
+		Add(context.Context, *SetWithMetadata, primitive.ObjectID, primitive.ObjectID) error
+		AddMultiple(context.Context, SetWithMetadata, primitive.ObjectID, primitive.ObjectID) error
+		GetAll(context.Context, primitive.ObjectID, primitive.ObjectID) ([]SetWithMetadata, error)
+		GetByID(context.Context, primitive.ObjectID) (*SetWithMetadata, error)
+		Update(context.Context, primitive.ObjectID, map[string]interface{}) error
+		UpdateMultiple(context.Context, primitive.ObjectID, primitive.ObjectID, []SetDetails) error
+		Delete(context.Context, primitive.ObjectID) error
 	}
 }
 
