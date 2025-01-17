@@ -45,41 +45,34 @@ func (app *application) mount() *fiber.App {
 	api.Get("/", app.healthCheckHandler)
 
 	user := api.Group("/user")
-	user.Get("/:userID", app.getUserHandler)       //✅
-	user.Post("/", app.createUserHandler)          //✅
-	user.Patch("/:userID", app.patchUserHandler)   //✅
-	user.Delete("/:userID", app.deleteUserHandler) //✅
+	user.Get("/:userID", app.getUserHandler)       // Get user details ✅
+	user.Post("/", app.createUserHandler)          // Create a user ✅
+	user.Patch("/:userID", app.patchUserHandler)   // Update user info ✅
+	user.Delete("/:userID", app.deleteUserHandler) // Delete user ✅
 
 	// Routine Routes
 	routine := api.Group("/:userID/routine")
-	// create a routine
-	routine.Post("/", app.createRoutineHandler) //✅
-	// Fetch all routines by userID
-	routine.Get("/", app.getAllUserRoutinesIDHandler) //✅
-	// returns a single routine
-	routine.Get("/:routineID", app.getRoutineByIDHandler) //✅
-	// Update a single routine
-	routine.Patch("/:routineID", app.patchRoutineHandler) //✅
-	// Delete a single routine
-	routine.Delete("/:routineID", app.deleteRoutineHandler) //✅
+	routine.Post("/", app.createRoutineHandler)             // create a routine ✅
+	routine.Get("/", app.getAllUserRoutinesIDHandler)       // Fetch all routines for a user ✅
+	routine.Get("/:routineID", app.getRoutineByIDHandler)   // Get a signle routine ✅
+	routine.Patch("/:routineID", app.patchRoutineHandler)   // Update a routine ✅
+	routine.Delete("/:routineID", app.deleteRoutineHandler) // Delete a routine ✅
 
 	// Exercise Routes
 	exercise := api.Group("/:userID/exercise")
-	// creating a custom exercise
-	exercise.Post("/", app.createExerciseHandler) //✅
-	// fetch all custom exercises by userID
-	exercise.Get("/", app.getAllUserExercisesHandler) //✅
-	//  fetch single custom exercise
-	exercise.Get("/:exerciseID", app.getExerciseByIDHandler) //✅
-	// update single custom exercise
-	exercise.Patch("/:exerciseID", app.updateExerciseHandler) //✅
-	// delete a custom exercise
-	exercise.Delete("/:exerciseID", app.deleteExerciseHandler) //✅
+	exercise.Post("/", app.createExerciseHandler)              // Create a custom exercise ✅
+	exercise.Get("/", app.getAllUserExercisesHandler)          // Fetch all exercises for a user ✅
+	exercise.Get("/:exerciseID", app.getExerciseByIDHandler)   // Get a single exercise ✅
+	exercise.Patch("/:exerciseID", app.updateExerciseHandler)  // Update an exercise ✅
+	exercise.Delete("/:exerciseID", app.deleteExerciseHandler) // Delete an exercise ✅
 
-	// Sets Routes
-	// set := api.Group("/:routineID")
-	// Add a set to a specific RoutineExercise
-	// set.Post("/", app.addSetHandler)
+	// Routes for Sets (Scoped by Exercise)
+	set := api.Group("/:userID/exercise/:exerciseID/set")
+	set.Post("/", app.addSetsHandler)           // Add a set to an exercise ✅
+	set.Get("/", app.getAllExerciseSetsHandler) // Fetch all sets for an exercise ✅
+	set.Get("/:setID", app.getSetByIDHandler)   // Fetch a single set ✅
+	set.Patch("/:setID", app.updateSetHandler)  // Update a set
+	set.Delete("/:setID", app.deleteSetHandler) // Delete a set ✅
 
 	return fiberApp
 }
