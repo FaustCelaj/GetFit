@@ -31,6 +31,41 @@ func (app *application) createExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
+	// Validate required fields
+	if exercise.Name == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "exercise name is required",
+		})
+	}
+	if exercise.Category == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "exercise category is required",
+		})
+	}
+
+	// Ensure nullable fields are explicitly set to nil if not provided
+	if exercise.Force == nil {
+		exercise.Force = nil // Explicitly set to nil
+	}
+	if exercise.Level == nil {
+		exercise.Level = nil // Explicitly set to nil
+	}
+	if exercise.Mechanic == nil {
+		exercise.Mechanic = nil // Explicitly set to nil
+	}
+	if exercise.Equipment == nil {
+		exercise.Equipment = nil // Explicitly set to nil
+	}
+	if exercise.PrimaryMuscles == nil {
+		exercise.PrimaryMuscles = &[]string{} // Default to empty array
+	}
+	if exercise.SecondaryMuscles == nil {
+		exercise.SecondaryMuscles = &[]string{} // Default to empty array
+	}
+	if exercise.Instructions == nil {
+		exercise.Instructions = &[]string{} // Default to empty array
+	}
+
 	exercise.UserID = userObjectID
 
 	if err := app.store.Exercise.Create(c.Context(), &exercise, userObjectID); err != nil {
@@ -146,64 +181,52 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
+	// Parse and validate payload
 	var payload updateExercisePayload
-	// Validate payload
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
 
-	// Validate version
+	// // Validate that all fields are present in the payload
+	// if payload.Name == nil || payload.Force == nil || payload.Level == nil ||
+	// 	payload.Mechanic == nil || payload.Equipment == nil || payload.PrimaryMuscles == nil ||
+	// 	payload.SecondaryMuscles == nil || payload.Instructions == nil || payload.Category == nil {
+	// 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	// 		"error": "All fields are required, even if null",
+	// 	})
+	// }
+
+	// Validate required fields (Name and Category cannot be nil or empty)
+	if payload.Name == nil || *payload.Name == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Name cannot be empty",
+		})
+	}
+	if payload.Category == nil || *payload.Category == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Category cannot be empty",
+		})
+	}
+
 	if payload.ExpectedVersion == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Current version is required",
 		})
 	}
 
-	updates := make(map[string]interface{})
-	if payload.Name != nil {
-		if *payload.Name == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Name cannot be empty",
-			})
-		}
-		updates["name"] = *payload.Name
-	}
-	if payload.Force != nil {
-		updates["force"] = *payload.Force
-	}
-	if payload.Level != nil {
-		updates["level"] = *payload.Level
-	}
-	if payload.Mechanic != nil {
-		updates["mechanic"] = *payload.Mechanic
-	}
-	if payload.Equipment != nil {
-		updates["equipment"] = *payload.Equipment
-	}
-	if payload.PrimaryMuscles != nil {
-		updates["primaryMuscles"] = *payload.PrimaryMuscles
-	}
-	if payload.SecondaryMuscles != nil {
-		updates["secondaryMuscles"] = *payload.SecondaryMuscles
-	}
-	if payload.Instructions != nil {
-		updates["instructions"] = *payload.Instructions
-	}
-	if payload.Category != nil {
-		if *payload.Category == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Category cannot be empty",
-			})
-		}
-		updates["category"] = *payload.Category
-	}
-
-	if len(updates) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "No fields to update",
-		})
+	// Build updates map
+	updates := map[string]interface{}{
+		"name":             *payload.Name,
+		"force":            *payload.Force,
+		"level":            *payload.Level,
+		"mechanic":         *payload.Mechanic,
+		"equipment":        *payload.Equipment,
+		"primaryMuscles":   *payload.PrimaryMuscles,
+		"secondaryMuscles": *payload.SecondaryMuscles,
+		"instructions":     *payload.Instructions,
+		"category":         *payload.Category,
 	}
 
 	// Perform the update in the database
@@ -213,7 +236,7 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Return a success response
+	// Return success response
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Exercise updated successfully",
 	})

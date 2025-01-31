@@ -11,17 +11,17 @@ import (
 )
 
 type Exercise struct {
-	ID               primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	ID               primitive.ObjectID `bson:"_id" json:"id"`
 	UserID           primitive.ObjectID `bson:"user_id" json:"user_id"`
 	Name             string             `bson:"name" json:"name"`
-	Force            *string            `bson:"force,omitempty" json:"force,omitempty"`                       // Nullable, string or null
-	Level            *string            `bson:"level,omitempty" json:"level,omitempty"`                       // Nullable, string or null
-	Mechanic         *string            `bson:"mechanic,omitempty" json:"mechanic,omitempty"`                 // Nullable
-	Equipment        *string            `bson:"equipment,omitempty" json:"equipment,omitempty"`               // Nullable
-	PrimaryMuscles   *[]string          `bson:"primaryMuscles,omitempty" json:"primaryMuscles,omitempty"`     // Nullable array
-	SecondaryMuscles *[]string          `bson:"secondaryMuscles,omitempty" json:"secondaryMuscles,omitempty"` // Nullable array
-	Instructions     *[]string          `bson:"instructions,omitempty" json:"instructions,omitempty"`         // Nullable array
-	Category         string             `bson:"category" json:"category"`                                     // Required
+	Force            *string            `bson:"force" json:"force"`
+	Level            *string            `bson:"level" json:"level"`
+	Mechanic         *string            `bson:"mechanic" json:"mechanic"`
+	Equipment        *string            `bson:"equipment" json:"equipment"`
+	PrimaryMuscles   *[]string          `bson:"primaryMuscles" json:"primaryMuscles"`
+	SecondaryMuscles *[]string          `bson:"secondaryMuscles" json:"secondaryMuscles"`
+	Instructions     *[]string          `bson:"instructions" json:"instructions"`
+	Category         string             `bson:"category" json:"category"`
 	IsCustom         bool               `bson:"is_custom" json:"is_custom"`
 	Version          int16              `bson:"version" json:"version"`
 	CreatedAt        time.Time          `bson:"created_at" json:"created_at"`
@@ -56,7 +56,7 @@ func (s *ExerciseStore) Create(ctx context.Context, exercise *Exercise, userID p
 		return fmt.Errorf("failed to insert exercise: %w", err)
 	}
 
-	// updating user to include custom exerciseID
+	// Update user to include custom exerciseID
 	_, err = s.db.Collection("user").UpdateOne(
 		ctx,
 		bson.M{"_id": userID},
@@ -113,55 +113,37 @@ func (s *ExerciseStore) Update(ctx context.Context, exerciseID, userID primitive
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
+	// Build filter to ensure the exercise belongs to the user and matches the expected version
 	filter := bson.M{
 		"_id":     exerciseID,
 		"user_id": userID,
 		"version": expectedVersion,
 	}
 
+	// Prepare update fields
 	updateFields := bson.M{}
-	if name, ok := updates["name"]; ok {
-		updateFields["name"] = name
-	}
-	if force, ok := updates["force"]; ok {
-		updateFields["force"] = force
-	}
-	if level, ok := updates["level"]; ok {
-		updateFields["level"] = level
-	}
-	if mechanic, ok := updates["mechanic"]; ok {
-		updateFields["mechanic"] = mechanic
-	}
-	if equipment, ok := updates["equipment"]; ok {
-		updateFields["equipment"] = equipment
-	}
-	if primaryMuscles, ok := updates["primaryMuscles"]; ok {
-		updateFields["primaryMuscles"] = primaryMuscles
-	}
-	if secondaryMuscles, ok := updates["secondaryMuscles"]; ok {
-		updateFields["secondaryMuscles"] = secondaryMuscles
-	}
-	if instructions, ok := updates["instructions"]; ok {
-		updateFields["instructions"] = instructions
-	}
-	if category, ok := updates["category"]; ok {
-		updateFields["category"] = category
+	for key, value := range updates {
+		updateFields[key] = value
 	}
 
+	// Add updated_at timestamp and increment version
 	updateFields["updated_at"] = time.Now()
+	updateFields["version"] = expectedVersion + 1
 
+	// Build the update query
 	update := bson.M{
 		"$set": updateFields,
-		"$inc": bson.M{"version": 1},
 	}
 
+	// Perform the update
 	result, err := s.db.Collection(exerciseCollection).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to update exercise: %w", err)
 	}
 
+	// Check if the exercise was found and updated
 	if result.ModifiedCount == 0 {
-		return fmt.Errorf("no exercise found with ID %s", exerciseID.Hex())
+		return fmt.Errorf("no exercise found with ID %s or version mismatch", exerciseID.Hex())
 	}
 
 	return nil
