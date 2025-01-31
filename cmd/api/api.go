@@ -5,6 +5,7 @@ import (
 
 	"github.com/FaustCelaj/GetFit.git/internal/store"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
@@ -37,6 +38,11 @@ func (app *application) mount() *fiber.App {
 	// Add middlewares
 	fiberApp.Use(logger.New())  // Logs all requests
 	fiberApp.Use(recover.New()) // Recovers from panics
+	fiberApp.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:5173,https://your-deployed-frontend.vercel.app",
+		AllowMethods: "GET,POST,PATCH,DELETE",
+		AllowHeaders: "Content-Type,Authorization",
+	}))
 
 	// Routes
 	api := fiberApp.Group("/v1")
