@@ -28,7 +28,7 @@ const FormSchema = z.object({
     }),
 });
 
-export function UpdateUsername() {
+export function UpdateUsernameForm() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
