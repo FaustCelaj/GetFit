@@ -1,5 +1,6 @@
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UpdatePersonalInformationForm } from '@/components/account/personal-information-form';
 
 import {
   Card,
@@ -8,6 +9,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+} from "@/components/ui/alert-dialog";
+
 import { StaticImageData } from "next/image";
 
 interface UserData {
@@ -55,9 +63,19 @@ export function PersonalInformationDisplay({
           <p>{userData.bio}</p>
         </CardContent>
       </div>
-      <Button variant="outline" className="absolute top-0 right-0 mt-2 mr-2">
-        Edit <Pencil className="h-4 w-4 ml-2" />
-      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="outline"
+            className="absolute top-0 right-0 mt-2 mr-2"
+          >
+            Edit <Pencil className="h-4 w-4 ml-2" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <UpdatePersonalInformationForm userData = {userData} />
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

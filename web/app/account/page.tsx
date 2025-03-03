@@ -21,9 +21,9 @@ const userData = {
   city: "Toronto",
 };
 
-export function AccountCard() {
+export function Account() {
   return (
-    <div className="flex flex-col gap-y-6 ">
+    <div className="flex flex-col gap-y-6 bg-indigo-400">
       <p className="text-lg font-semibold text-black">My Profile</p>
 
       <BioDisplay userData={userData} />

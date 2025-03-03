@@ -53,7 +53,7 @@ export function UpdateEmailForm() {
   }
 
   return (
-    <AlertDialogContent className="max-w-xs md:max-w-lg">
+    <AlertDialogContent className="max-w-96 md:max-w-lg rounded-md">
       <AlertDialogHeader>
         <AlertDialogTitle>Update Email Address</AlertDialogTitle>
       </AlertDialogHeader>
