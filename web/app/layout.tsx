@@ -24,10 +24,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body>
+      {/* <body className="h-screen overflow-hidden"> */}
+      <body className="h-dvh">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SidebarProvider>
-            <div className="flex">
+            <div className="flex h-full w-full">
               <AppSidebar /> {/* Sidebar on the left */}
               <main className="flex-1 p-4">
                 <SidebarTrigger />

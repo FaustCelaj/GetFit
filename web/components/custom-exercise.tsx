@@ -37,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 // Schema for form validation
+// add instructions
 const customExerciseSchema = z.object({
   name: z
     .string()
