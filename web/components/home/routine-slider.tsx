@@ -35,41 +35,47 @@ interface RoutineProps {
 
 export function RoutineSlider({ routines }: RoutineProps) {
   return (
-    <Carousel className="p-6 w-full max-w-xl max-h-max bg-red-400">
-      <CarouselContent>
-        {routines.map((routine, index) => (
-          <CarouselItem key={index} className="p-4">
-            <Card className="shadow-lg rounded-xl">
-              <CardHeader>
-                <CardTitle className="felx felx-row text-xl font-bold">
-                  {routine.title}
-                </CardTitle>
-                <CardDescription className="text-gray-500">
-                  {routine.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 max-h-max overflow-scroll">
-                {routine.exercises.map((exercise, i) => (
-                  <div
-                    key={i}
-                    className="border-b pb-2"
-                  >
-                    <p className="text-lg font-medium">{exercise.name}</p>
-                    <p className="text-gray-600">
-                      {exercise.totalSets} sets x {exercise.totalReps} reps
-                    </p>
-                  </div>
-                ))}
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full mt-4">Start New Workout</Button>
-              </CardFooter>
-            </Card>
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
-    </Carousel>
+    <Card className="h-full bg-white rounded-xl shadow-md">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-bold">Your Routines</CardTitle>
+      </CardHeader>
+      <CardContent className="overflow-y-auto">
+        <Carousel className="h-full">
+          <CarouselContent className="h-full">
+            {routines.map((routine, index) => (
+              <CarouselItem key={index} className="h-full p-2">
+                <Card className="shadow-sm rounded-xl h-full flex flex-col">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xl font-bold">
+                      {routine.title}
+                    </CardTitle>
+                    <CardDescription className="text-gray-600">
+                      {routine.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex-grow overflow-auto py-2">
+                    <div className="space-y-3">
+                      {routine.exercises.map((exercise, i) => (
+                        <div key={i} className="border-b pb-2">
+                          <p className="text-md font-medium">{exercise.name}</p>
+                          <p className="text-gray-600 text-sm">
+                            {exercise.totalSets} sets x {exercise.totalReps} reps
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                  <CardFooter className="pt-2">
+                    <Button className="w-full">Start Workout</Button>
+                  </CardFooter>
+                </Card>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="left-1" />
+          <CarouselNext className="right-1" />
+        </Carousel>
+      </CardContent>
+    </Card>
   );
 }
