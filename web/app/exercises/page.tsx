@@ -69,7 +69,7 @@ const exercises: ExerciseType[] = [
   },
 ];
 
-export function ExerciseList() {
+export default function ExerciseList() {
   const [selectedExercise, setSelectedExercise] = useState<ExerciseType | null>(
     null
   );

@@ -20,23 +20,17 @@ export const metadata: Metadata = {
   description: "Personal Workout Tracker",
 };
 
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
       <head />
-      {/* <body className="h-screen overflow-hidden"> */}
-      <body className="h-dvh">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <SidebarProvider>
-            <div className="flex h-full w-full">
-              <AppSidebar /> {/* Sidebar on the left */}
-              <main className="flex-1 p-4">
-                <SidebarTrigger />
+      <body className="min-h-screen container">
+            <div className="flex min-h-screen w-full">
+              <main className="flex-1 lg:overflow-hidden overflow-auto">
                 {children} {/* Main content */}
               </main>
             </div>
-          </SidebarProvider>
-        </ThemeProvider>
       </body>
     </html>
   );
