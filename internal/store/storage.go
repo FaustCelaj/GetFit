@@ -45,13 +45,23 @@ type Storage struct {
 		UpdateMultiple(context.Context, primitive.ObjectID, primitive.ObjectID, []SetDetails) error
 		Delete(context.Context, primitive.ObjectID) error
 	}
+	WorkoutSession interface {
+		Create(context.Context, *WorkoutSession, primitive.ObjectID) error
+		CreateFromRoutine(context.Context, primitive.ObjectID, primitive.ObjectID) (*WorkoutSession, error)
+		GetAllUserSessions(context.Context, primitive.ObjectID) ([]*WorkoutSession, error)
+		GetByID(context.Context, primitive.ObjectID, primitive.ObjectID) (*WorkoutSession, error)
+		AddSetToExercise(context.Context, primitive.ObjectID, primitive.ObjectID, primitive.ObjectID, SessionSet) error
+		CompleteWorkout(context.Context, primitive.ObjectID, primitive.ObjectID) error
+		Delete(context.Context, primitive.ObjectID, primitive.ObjectID) error
+	}
 }
 
 func NewMongoDBStorage(db *mongo.Database) Storage {
 	return Storage{
-		Users:    &UserStore{db},
-		Routine:  &RoutineStore{db},
-		Exercise: &ExerciseStore{db},
-		Set:      &SetStore{db},
+		Users:          &UserStore{db},
+		Routine:        &RoutineStore{db},
+		Exercise:       &ExerciseStore{db},
+		Set:            &SetStore{db},
+		WorkoutSession: &WorkoutSessionStore{db},
 	}
 }
