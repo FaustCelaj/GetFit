@@ -96,7 +96,7 @@ func (s *WorkoutSessionStore) CreateFromRoutine(ctx context.Context, routineID, 
 		Exercises:   []SessionExercise{},
 	}
 
-	for i, exerciseID := range routine.ExerciseID {
+	for i, exerciseID := range routine.Exercises {
 		sessionExercise := SessionExercise{
 			ExerciseID:    exerciseID,
 			Order:         i,
@@ -157,7 +157,7 @@ func (s *WorkoutSessionStore) GetByID(ctx context.Context, sessionID, userID pri
 }
 
 // Update workout session (add or update sets)
-func (s *WorkoutSessionStore) AddSetToExercise(ctx context.Context, sessionID, userID, exerciseID primitive.ObjectID, set SessionSet) error {
+func (s *WorkoutSessionStore) AddSetToExercise(ctx context.Context, sessionID, userID, exerciseID primitive.ObjectID, set SessionSet, expectedVersion int16) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -171,6 +171,7 @@ func (s *WorkoutSessionStore) AddSetToExercise(ctx context.Context, sessionID, u
 		"_id":                   sessionID,
 		"user_id":               userID,
 		"exercises.exercise_id": exerciseID,
+		"version":               expectedVersion,
 	}
 
 	update := bson.M{
