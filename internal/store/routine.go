@@ -11,14 +11,26 @@ import (
 )
 
 type Routine struct {
-	ID          primitive.ObjectID   `bson:"_id" json:"id"`
-	UserID      primitive.ObjectID   `bson:"user_id" json:"user_id"`
-	Title       string               `bson:"title" json:"title"`
-	Description *string              `bson:"description,omitempty" json:"description,omitempty"`
-	ExerciseID  []primitive.ObjectID `bson:"exercise_id" json:"exercise_id"`
-	Version     int16                `bson:"version" json:"version"`
-	CreatedAt   time.Time            `bson:"created_at" json:"created_at"`
-	UpdatedAt   time.Time            `bson:"updated_at" json:"updated_at"`
+	ID          primitive.ObjectID `bson:"_id" json:"id"`
+	UserID      primitive.ObjectID `bson:"user_id" json:"user_id"`
+	Title       string             `bson:"title" json:"title"`
+	Description *string            `bson:"description,omitempty" json:"description,omitempty"`
+	Exercises   []RoutineExercise  `bson:"exercises" json:"exercises"`
+	Version     int16              `bson:"version" json:"version"`
+	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt   time.Time          `bson:"updated_at" json:"updated_at"`
+}
+
+type RoutineExercise struct {
+	ExerciseID primitive.ObjectID `bson:"exercise_id" json:"exercise_id"`
+	Order      int                `bson:"order" json:"order"`
+	Sets       []TemplateSet      `bson:"template-sets" json:"template-sets"`
+}
+
+type TemplateSet struct {
+	Weight    float32 `bson:"weight" json:"weight"`
+	Reps      int16   `bson:"reps" json:"reps"`
+	SetNumber int16   `bson:"set_number" json:"set_number"`
 }
 
 type RoutineStore struct {
@@ -31,7 +43,7 @@ const routineCollection = "routine"
 func (s *RoutineStore) Create(ctx context.Context, routine *Routine, userID primitive.ObjectID) error {
 
 	// checking for empty
-	if len(routine.ExerciseID) == 0 {
+	if len(routine.Exercises) == 0 {
 		return fmt.Errorf("your routine needs at least 1 exercise")
 	}
 
@@ -41,12 +53,27 @@ func (s *RoutineStore) Create(ctx context.Context, routine *Routine, userID prim
 
 	// assigning an ID
 	routine.ID = primitive.NewObjectID()
+	routine.UserID = userID
 	routine.CreatedAt = time.Now()
 	routine.UpdatedAt = time.Now()
 
 	// setting the version number
 	if routine.Version == 0 {
 		routine.Version = 1
+	}
+
+	// setting the order if not provided
+	for i := range routine.Exercises {
+		if routine.Exercises[i].Order == 0 {
+			routine.Exercises[i].Order = i
+		}
+
+		// setting set numbers if not provided
+		for j := range routine.Exercises[i].Sets {
+			if routine.Exercises[i].Sets[j].SetNumber == 0 {
+				routine.Exercises[i].Sets[j].SetNumber = int16(j + 1)
+			}
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -94,13 +121,11 @@ func (s *RoutineStore) GetAllUserRoutines(ctx context.Context, userID primitive.
 }
 
 // Get a routine by routineID and userID
-// returns a single routine to match specified userID and routineID
 func (s *RoutineStore) GetByID(ctx context.Context, routineID, userID primitive.ObjectID) (*Routine, error) {
 	routine := &Routine{}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	// Create a filter for both userID and routineID
 	filter := bson.M{
 		"_id":     routineID,
 		"user_id": userID,
@@ -127,15 +152,10 @@ func (s *RoutineStore) Update(ctx context.Context, routineID, userID primitive.O
 	}
 
 	updateFields := bson.M{}
-	if exercises, ok := updates["exercise_id"]; ok {
-		updateFields["exercise_id"] = exercises
+	for key, value := range updates {
+		updateFields[key] = value
 	}
-	if description, ok := updates["description"]; ok {
-		updateFields["description"] = description
-	}
-	if title, ok := updates["title"]; ok {
-		updateFields["title"] = title
-	}
+
 	updateFields["updated_at"] = time.Now()
 
 	update := bson.M{
@@ -150,6 +170,131 @@ func (s *RoutineStore) Update(ctx context.Context, routineID, userID primitive.O
 
 	if result.ModifiedCount == 0 {
 		return fmt.Errorf("no routine found with ID %s", routineID.Hex())
+	}
+
+	return nil
+}
+
+// add an exercise to a routine
+func (s *RoutineStore) AddExerciseToRoutine(ctx context.Context, routineID, userID, exerciseID primitive.ObjectID, templateSets []TemplateSet, expectedVersion int16) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// Get current routine to find the next order number
+	routine, err := s.GetByID(ctx, routineID, userID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch routine: %w", err)
+	}
+
+	// Find the next order value
+	nextOrder := 0
+	for _, ex := range routine.Exercises {
+		if ex.Order >= nextOrder {
+			nextOrder = ex.Order + 1
+		}
+	}
+
+	// Set numbers for the sets
+	for i := range templateSets {
+		if templateSets[i].SetNumber == 0 {
+			templateSets[i].SetNumber = int16(i + 1)
+		}
+	}
+
+	// Create new routine exercise
+	newExercise := RoutineExercise{
+		ExerciseID: exerciseID,
+		Order:      nextOrder,
+		Sets:       templateSets,
+	}
+
+	filter := bson.M{
+		"_id":     routineID,
+		"user_id": userID,
+		"version": expectedVersion,
+	}
+
+	update := bson.M{
+		"$push": bson.M{"exercises": newExercise},
+		"$set":  bson.M{"updated_at": time.Now()},
+		"$inc":  bson.M{"version": 1},
+	}
+
+	result, err := s.db.Collection(routineCollection).UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to add exercise to routine: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		return fmt.Errorf("no routine found with ID %s or version mismatch", routineID.Hex())
+	}
+
+	return nil
+}
+
+// update an exercise in a routine
+func (s *RoutineStore) UpdateExerciseInRoutine(ctx context.Context, routineID, userID, exerciseID primitive.ObjectID, templateSets []TemplateSet, expectedVersion int16) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// Set numbers for the sets
+	for i := range templateSets {
+		if templateSets[i].SetNumber == 0 {
+			templateSets[i].SetNumber = int16(i + 1)
+		}
+	}
+
+	filter := bson.M{
+		"_id":                   routineID,
+		"user_id":               userID,
+		"exercises.exercise_id": exerciseID,
+		"version":               expectedVersion,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"exercises.$.template_sets": templateSets,
+			"updated_at":                time.Now(),
+		},
+		"$inc": bson.M{"version": 1},
+	}
+
+	result, err := s.db.Collection(routineCollection).UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to update exercise in routine: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		return fmt.Errorf("no routine or exercise found with the given IDs or version mismatch")
+	}
+
+	return nil
+}
+
+// remove exercise from a routine
+func (s *RoutineStore) RemoveExerciseFromRoutine(ctx context.Context, routineID, userID, exerciseID primitive.ObjectID, expectedVersion int16) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"_id":     routineID,
+		"user_id": userID,
+		"version": expectedVersion,
+	}
+
+	update := bson.M{
+		"$pull": bson.M{"exercises": bson.M{"exercise_id": exerciseID}},
+		"$set":  bson.M{"updated_at": time.Now()},
+		"$inc":  bson.M{"version": 1},
+	}
+
+	result, err := s.db.Collection(routineCollection).UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to remove exercise from routine: %w", err)
+	}
+
+	if result.ModifiedCount == 0 {
+		return fmt.Errorf("no routine found with ID %s or version mismatch", routineID.Hex())
 	}
 
 	return nil

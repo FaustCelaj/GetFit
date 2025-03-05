@@ -27,6 +27,9 @@ type Storage struct {
 		GetAllUserRoutines(context.Context, primitive.ObjectID) ([]*Routine, error)
 		GetByID(context.Context, primitive.ObjectID, primitive.ObjectID) (*Routine, error)
 		Update(context.Context, primitive.ObjectID, primitive.ObjectID, map[string]interface{}, int16) error
+		AddExerciseToRoutine(context.Context, primitive.ObjectID, primitive.ObjectID, primitive.ObjectID, []TemplateSet, int16) error
+		UpdateExerciseInRoutine(context.Context, primitive.ObjectID, primitive.ObjectID, primitive.ObjectID, []TemplateSet, int16) error
+		RemoveExerciseFromRoutine(context.Context, primitive.ObjectID, primitive.ObjectID, primitive.ObjectID, int16) error
 		Delete(context.Context, primitive.ObjectID, primitive.ObjectID) error
 	}
 	Exercise interface {
@@ -35,15 +38,6 @@ type Storage struct {
 		GetByID(context.Context, primitive.ObjectID, primitive.ObjectID) (*Exercise, error)
 		Update(context.Context, primitive.ObjectID, primitive.ObjectID, map[string]interface{}, int16) error
 		Delete(context.Context, primitive.ObjectID, primitive.ObjectID) error
-	}
-	Set interface {
-		Add(context.Context, *SetWithMetadata, primitive.ObjectID, primitive.ObjectID) error
-		AddMultiple(context.Context, SetWithMetadata, primitive.ObjectID, primitive.ObjectID) error
-		GetAll(context.Context, primitive.ObjectID, primitive.ObjectID) ([]SetWithMetadata, error)
-		GetByID(context.Context, primitive.ObjectID) (*SetWithMetadata, error)
-		Update(context.Context, primitive.ObjectID, map[string]interface{}) error
-		UpdateMultiple(context.Context, primitive.ObjectID, primitive.ObjectID, []SetDetails) error
-		Delete(context.Context, primitive.ObjectID) error
 	}
 	WorkoutSession interface {
 		Create(context.Context, *WorkoutSession, primitive.ObjectID) error
@@ -61,7 +55,6 @@ func NewMongoDBStorage(db *mongo.Database) Storage {
 		Users:          &UserStore{db},
 		Routine:        &RoutineStore{db},
 		Exercise:       &ExerciseStore{db},
-		Set:            &SetStore{db},
 		WorkoutSession: &WorkoutSessionStore{db},
 	}
 }
