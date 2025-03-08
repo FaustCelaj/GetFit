@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/FaustCelaj/GetFit.git/internal/store"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -33,9 +31,9 @@ func (app *application) createRoutineHandler(c *fiber.Ctx) error {
 	}
 
 	// Validate the routine
-	if len(routine.ExerciseID) == 0 {
+	if routine.Title == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "a routine must contain at least one exercise",
+			"error": "routine title is required",
 		})
 	}
 
@@ -180,20 +178,6 @@ func (app *application) patchRoutineHandler(c *fiber.Ctx) error {
 	if payload.Description != nil {
 		updates["description"] = &payload.Description
 	}
-	// converting and appending the exerciseID's
-	if payload.ExerciseID != nil {
-		exerciseIDs := []primitive.ObjectID{}
-		for _, id := range *payload.ExerciseID {
-			objID, err := primitive.ObjectIDFromHex(id)
-			if err != nil {
-				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-					"error": fmt.Sprintf("Invalid exercise ID format: %s", id),
-				})
-			}
-			exerciseIDs = append(exerciseIDs, objID)
-		}
-		updates["exercise_id"] = exerciseIDs
-	}
 
 	if len(updates) == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -204,7 +188,8 @@ func (app *application) patchRoutineHandler(c *fiber.Ctx) error {
 	// Perform the update in the database
 	if err := app.store.Routine.Update(c.Context(), routineID, userID, updates, payload.ExpectedVersion); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update routine",
+			"error":   "Failed to update routine",
+			"details": err.Error(),
 		})
 	}
 
@@ -236,7 +221,8 @@ func (app *application) deleteRoutineHandler(c *fiber.Ctx) error {
 
 	if err := app.store.Routine.Delete(c.Context(), routineID, userID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to delete routine",
+			"error":   "Failed to delete routine",
+			"details": err.Error(),
 		})
 	}
 

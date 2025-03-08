@@ -24,7 +24,7 @@ type Routine struct {
 type RoutineExercise struct {
 	ExerciseID primitive.ObjectID `bson:"exercise_id" json:"exercise_id"`
 	Order      int                `bson:"order" json:"order"`
-	Sets       []TemplateSet      `bson:"template-sets" json:"template-sets"`
+	Sets       []TemplateSet      `bson:"template_sets" json:"template_sets"`
 }
 
 type TemplateSet struct {

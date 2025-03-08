@@ -82,7 +82,7 @@ func (app *application) createExerciseHandler(c *fiber.Ctx) error {
 	})
 }
 
-func (app *application) getAllUserExercisesHandler(c *fiber.Ctx) error {
+func (app *application) getAllUserExerciseHandler(c *fiber.Ctx) error {
 	userID := c.Params("userID")
 	if userID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
