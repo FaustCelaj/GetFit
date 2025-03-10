@@ -85,15 +85,15 @@ func (s *RoutineStore) Create(ctx context.Context, routine *Routine, userID prim
 		return fmt.Errorf("failed to create routine: %w", err)
 	}
 
-	// Update the user document to include the routine ID
-	_, err = s.db.Collection("user").UpdateOne(
-		ctx,
-		bson.M{"_id": userID},
-		bson.M{"$push": bson.M{"routines": routine.ID}},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to associate routine with user: %w", err)
-	}
+	// // Update the user document to include the routine ID
+	// _, err = s.db.Collection("user").UpdateOne(
+	// 	ctx,
+	// 	bson.M{"_id": userID},
+	// 	bson.M{"$push": bson.M{"routines": routine.ID}},
+	// )
+	// if err != nil {
+	// 	return fmt.Errorf("failed to associate routine with user: %w", err)
+	// }
 
 	return nil
 }

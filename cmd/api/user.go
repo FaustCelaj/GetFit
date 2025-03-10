@@ -68,6 +68,10 @@ func (app *application) getUserHandler(c *fiber.Ctx) error {
 type updateUserPayload struct {
 	Username        *string `json:"username"`
 	Email           *string `json:"email"`
+	FirstName       *string `json:"first_name,omitempty"`
+	Age             *int8   `json:"age,omitempty"`
+	Title           *string `json:"title,omitempty"`
+	Bio             *string `json:"bio,omitempty"`
 	ExpectedVersion int16   `json:"expected_version"`
 }
 
@@ -104,6 +108,18 @@ func (app *application) patchUserHandler(c *fiber.Ctx) error {
 	}
 	if payload.Email != nil {
 		updates["email"] = *payload.Email
+	}
+	if payload.FirstName != nil {
+		updates["first_name"] = *payload.FirstName
+	}
+	if payload.Age != nil {
+		updates["age"] = *payload.Age
+	}
+	if payload.Title != nil {
+		updates["title"] = *payload.Title
+	}
+	if payload.Bio != nil {
+		updates["bio"] = *payload.Bio
 	}
 
 	// If no fields to update, return a bad request
@@ -157,7 +173,6 @@ func (app *application) deleteUserHandler(c *fiber.Ctx) error {
 // 	return func(c *fiber.Ctx) error {
 // 		// Get the userID from the URL parameter
 // 		userIDStr := c.Params("userID")
-
 // 		// Convert the userID to primitive.ObjectID
 // 		userID, err := primitive.ObjectIDFromHex(userIDStr)
 // 		if err != nil {
@@ -165,7 +180,6 @@ func (app *application) deleteUserHandler(c *fiber.Ctx) error {
 // 				"error": "Invalid user ID format",
 // 			})
 // 		}
-
 // 		// Fetch the user from the store
 // 		user, err := app.store.Users.GetById(c.Context(), userID)
 // 		if err != nil {
@@ -179,15 +193,12 @@ func (app *application) deleteUserHandler(c *fiber.Ctx) error {
 // 				"error": "Failed to fetch user",
 // 			})
 // 		}
-
 // 		// Add the user to the request context
 // 		c.Locals("user", user)
-
 // 		// Call the next handler
 // 		return next(c)
 // 	}
 // }
-
 // // helper func
 // func getUserFromCtx(c *fiber.Ctx) *store.User {
 // 	user, _ := c.Locals("user").(*store.User)

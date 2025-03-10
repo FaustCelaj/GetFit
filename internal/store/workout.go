@@ -45,7 +45,7 @@ type WorkoutSessionStore struct {
 	db *mongo.Database
 }
 
-const workoutSessionCollection = "workout_session"
+const workoutCollection = "workout"
 
 // starting a workout session from scratch (adding as we go)
 func (s *WorkoutSessionStore) Create(ctx context.Context, session *WorkoutSession, userID primitive.ObjectID) error {
@@ -64,7 +64,7 @@ func (s *WorkoutSessionStore) Create(ctx context.Context, session *WorkoutSessio
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	_, err := s.db.Collection(workoutSessionCollection).InsertOne(ctx, session)
+	_, err := s.db.Collection(workoutCollection).InsertOne(ctx, session)
 	if err != nil {
 		return fmt.Errorf("failed to create workout session: %w", err)
 	}
@@ -105,7 +105,7 @@ func (s *WorkoutSessionStore) CreateFromRoutine(ctx context.Context, routineID, 
 		session.Exercises = append(session.Exercises, sessionExercise)
 	}
 
-	_, err = s.db.Collection(workoutSessionCollection).InsertOne(ctx, session)
+	_, err = s.db.Collection(workoutCollection).InsertOne(ctx, session)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create workout session from routine: %w", err)
 	}
@@ -124,7 +124,7 @@ func (s *WorkoutSessionStore) GetAllUserSessions(ctx context.Context, userID pri
 	// Sort by start_time in descending order (newest first)
 	opts := options.Find().SetSort(bson.M{"start_time": -1})
 
-	cursor, err := s.db.Collection(workoutSessionCollection).Find(ctx, filter, opts)
+	cursor, err := s.db.Collection(workoutCollection).Find(ctx, filter, opts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch workout sessions: %w", err)
 	}
@@ -148,7 +148,7 @@ func (s *WorkoutSessionStore) GetByID(ctx context.Context, sessionID, userID pri
 		"user_id": userID,
 	}
 
-	err := s.db.Collection(workoutSessionCollection).FindOne(ctx, filter).Decode(session)
+	err := s.db.Collection(workoutCollection).FindOne(ctx, filter).Decode(session)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch workout session: %w", err)
 	}
@@ -185,7 +185,7 @@ func (s *WorkoutSessionStore) AddSetToExercise(ctx context.Context, sessionID, u
 		},
 	}
 
-	result, err := s.db.Collection(workoutSessionCollection).UpdateOne(ctx, filter, update)
+	result, err := s.db.Collection(workoutCollection).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to add set to exercise: %w", err)
 	}
@@ -248,7 +248,7 @@ func (s *WorkoutSessionStore) CompleteWorkout(ctx context.Context, sessionID, us
 		},
 	}
 
-	result, err := s.db.Collection(workoutSessionCollection).UpdateOne(ctx, filter, update)
+	result, err := s.db.Collection(workoutCollection).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to complete workout session: %w", err)
 	}
@@ -270,7 +270,7 @@ func (s *WorkoutSessionStore) Delete(ctx context.Context, sessionID, userID prim
 		"user_id": userID,
 	}
 
-	result, err := s.db.Collection(workoutSessionCollection).DeleteOne(ctx, filter)
+	result, err := s.db.Collection(workoutCollection).DeleteOne(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to delete workout session: %w", err)
 	}
