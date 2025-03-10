@@ -11,15 +11,18 @@ import (
 )
 
 type User struct {
-	ID              primitive.ObjectID   `bson:"_id" json:"id"`
-	Username        string               `bson:"username" json:"username"`
-	Email           string               `bson:"email" json:"email"`
-	Password        string               `bson:"password_hash" json:"password_hash"`
-	Routines        []primitive.ObjectID `bson:"routines" json:"routines"`
-	CustomExercises []primitive.ObjectID `bson:"custom_exercises" json:"custom_exercises"`
-	Version         int16                `bson:"version" json:"version"`
-	CreatedAt       time.Time            `bson:"created_at" json:"created_at"`
-	UpdatedAt       time.Time            `bson:"updated_at" json:"updated_at"`
+	ID        primitive.ObjectID `bson:"_id" json:"id"`
+	Username  string             `bson:"username" json:"username"`
+	Email     string             `bson:"email" json:"email"`
+	Password  string             `bson:"password_hash" json:"password_hash"`
+	FirstName string             `bson:"first_name" json:"first_name"`
+	LasttName string             `bson:"last_name" json:"last_name"`
+	Age       int8               `bson:"age" json:"age"`
+	Title     string             `bson:"title" json:"title"`
+	Bio       string             `bson:"bio" json:"bio"`
+	Version   int16              `bson:"version" json:"version"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
 type UserStore struct {
@@ -50,8 +53,6 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 	user.ID = primitive.NewObjectID()
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
-	user.Routines = []primitive.ObjectID{}
-	user.CustomExercises = []primitive.ObjectID{}
 
 	// setting the version number
 	if user.Version == 0 {
@@ -83,6 +84,19 @@ func (s *UserStore) Update(ctx context.Context, userID primitive.ObjectID, updat
 	if email, ok := updates["email"]; ok {
 		updateFields["email"] = email
 	}
+	if firstName, ok := updates["first_name"]; ok {
+		updateFields["first_name"] = firstName
+	}
+	if age, ok := updates["age"]; ok {
+		updateFields["age"] = age
+	}
+	if title, ok := updates["title"]; ok {
+		updateFields["title"] = title
+	}
+	if bio, ok := updates["bio"]; ok {
+		updateFields["bio"] = bio
+	}
+
 	updateFields["updated_at"] = time.Now()
 
 	update := bson.M{"$set": updateFields, "$inc": bson.M{"version": 1}}

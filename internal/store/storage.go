@@ -36,6 +36,7 @@ type Storage struct {
 		Create(context.Context, *Exercise, primitive.ObjectID) error
 		GetAllUserExercises(context.Context, primitive.ObjectID) ([]*Exercise, error)
 		GetByID(context.Context, primitive.ObjectID, primitive.ObjectID) (*Exercise, error)
+		SearchExerciseByID(context.Context, primitive.ObjectID) (*Exercise, error)
 		Update(context.Context, primitive.ObjectID, primitive.ObjectID, map[string]interface{}, int16) error
 		Delete(context.Context, primitive.ObjectID, primitive.ObjectID) error
 	}

@@ -56,15 +56,15 @@ func (s *ExerciseStore) Create(ctx context.Context, exercise *Exercise, userID p
 		return fmt.Errorf("failed to insert exercise: %w", err)
 	}
 
-	// Update user to include custom exerciseID
-	_, err = s.db.Collection("user").UpdateOne(
-		ctx,
-		bson.M{"_id": userID},
-		bson.M{"$push": bson.M{"custom_exercises": exercise.ID}},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to associate custom exercise with user: %w", err)
-	}
+	// // Update user to include custom exerciseID
+	// _, err = s.db.Collection("user").UpdateOne(
+	// 	ctx,
+	// 	bson.M{"_id": userID},
+	// 	bson.M{"$push": bson.M{"custom_exercises": exercise.ID}},
+	// )
+	// if err != nil {
+	// 	return fmt.Errorf("failed to associate custom exercise with user: %w", err)
+	// }
 	return nil
 }
 
@@ -100,6 +100,21 @@ func (s *ExerciseStore) GetByID(ctx context.Context, exerciseID, userID primitiv
 		"_id":     exerciseID,
 		"user_id": userID,
 	}
+
+	err := s.db.Collection(exerciseCollection).FindOne(ctx, filter).Decode(exercise)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch exercise: %w", err)
+	}
+
+	return exercise, nil
+}
+
+func (s *ExerciseStore) SearchExerciseByID(ctx context.Context, exerciseID primitive.ObjectID) (*Exercise, error) {
+	exercise := &Exercise{}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": exerciseID}
 
 	err := s.db.Collection(exerciseCollection).FindOne(ctx, filter).Decode(exercise)
 	if err != nil {

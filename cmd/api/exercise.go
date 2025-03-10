@@ -31,7 +31,6 @@ func (app *application) createExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Validate required fields
 	if exercise.Name == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "exercise name is required",
@@ -43,27 +42,26 @@ func (app *application) createExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Ensure nullable fields are explicitly set to nil if not provided
 	if exercise.Force == nil {
-		exercise.Force = nil // Explicitly set to nil
+		exercise.Force = nil
 	}
 	if exercise.Level == nil {
-		exercise.Level = nil // Explicitly set to nil
+		exercise.Level = nil
 	}
 	if exercise.Mechanic == nil {
-		exercise.Mechanic = nil // Explicitly set to nil
+		exercise.Mechanic = nil
 	}
 	if exercise.Equipment == nil {
-		exercise.Equipment = nil // Explicitly set to nil
+		exercise.Equipment = nil
 	}
 	if exercise.PrimaryMuscles == nil {
-		exercise.PrimaryMuscles = &[]string{} // Default to empty array
+		exercise.PrimaryMuscles = &[]string{}
 	}
 	if exercise.SecondaryMuscles == nil {
-		exercise.SecondaryMuscles = &[]string{} // Default to empty array
+		exercise.SecondaryMuscles = &[]string{}
 	}
 	if exercise.Instructions == nil {
-		exercise.Instructions = &[]string{} // Default to empty array
+		exercise.Instructions = &[]string{}
 	}
 
 	exercise.UserID = userObjectID
@@ -122,7 +120,6 @@ func (app *application) getExerciseByIDHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Validate and convert routineID
 	exerciseID, err := primitive.ObjectIDFromHex(exerciseIDstr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -135,6 +132,34 @@ func (app *application) getExerciseByIDHandler(c *fiber.Ctx) error {
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "Exercise not found or does not belong to the user",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch exercise",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message":  "Routine retrieved successfully",
+		"exercise": exercise,
+	})
+}
+
+func (app *application) searchExerciseByIDHandler(c *fiber.Ctx) error {
+	exerciseIDstr := c.Params("exerciseID")
+
+	exerciseID, err := primitive.ObjectIDFromHex(exerciseIDstr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid routineID format",
+		})
+	}
+
+	exercise, err := app.store.Exercise.SearchExerciseByID(c.Context(), exerciseID)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Exercise not found",
 			})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -165,7 +190,6 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 	userIDStr := c.Params("userID")
 	exerciseIDStr := c.Params("exerciseID")
 
-	// Validate and convert userID
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -173,7 +197,6 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Validate and convert exerciseID
 	exerciseID, err := primitive.ObjectIDFromHex(exerciseIDStr)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -181,7 +204,6 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Parse and validate payload
 	var payload updateExercisePayload
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -189,16 +211,6 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// // Validate that all fields are present in the payload
-	// if payload.Name == nil || payload.Force == nil || payload.Level == nil ||
-	// 	payload.Mechanic == nil || payload.Equipment == nil || payload.PrimaryMuscles == nil ||
-	// 	payload.SecondaryMuscles == nil || payload.Instructions == nil || payload.Category == nil {
-	// 	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-	// 		"error": "All fields are required, even if null",
-	// 	})
-	// }
-
-	// Validate required fields (Name and Category cannot be nil or empty)
 	if payload.Name == nil || *payload.Name == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Name cannot be empty",
@@ -229,14 +241,12 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 		"category":         *payload.Category,
 	}
 
-	// Perform the update in the database
 	if err := app.store.Exercise.Update(c.Context(), exerciseID, userID, updates, payload.ExpectedVersion); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Failed to update exercise",
 		})
 	}
 
-	// Return success response
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Exercise updated successfully",
 	})
