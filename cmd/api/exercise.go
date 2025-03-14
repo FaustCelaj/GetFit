@@ -7,19 +7,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// "/exercise"
 func (app *application) createExerciseHandler(c *fiber.Ctx) error {
-	userID := c.Params("userID")
-	if userID == "" {
+	userID := getUserIDFromContext(c)
+	if userID == primitive.NilObjectID {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "userID is required",
-		})
-	}
-
-	userObjectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"details": err.Error(),
-			"error":   "invalid userID format",
+			"error": "userID not found in context",
 		})
 	}
 
@@ -64,9 +57,9 @@ func (app *application) createExerciseHandler(c *fiber.Ctx) error {
 		exercise.Instructions = &[]string{}
 	}
 
-	exercise.UserID = userObjectID
+	exercise.UserID = userID
 
-	if err := app.store.Exercise.Create(c.Context(), &exercise, userObjectID); err != nil {
+	if err := app.store.Exercise.Create(c.Context(), &exercise, userID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"details": err.Error(),
 			"error":   "Failed to create exercise",
@@ -81,21 +74,14 @@ func (app *application) createExerciseHandler(c *fiber.Ctx) error {
 }
 
 func (app *application) getAllUserExerciseHandler(c *fiber.Ctx) error {
-	userID := c.Params("userID")
-	if userID == "" {
+	userID := getUserIDFromContext(c)
+	if userID == primitive.NilObjectID {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "userID is required",
+			"error": "userID not found in context",
 		})
 	}
 
-	userObjectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid userID format",
-		})
-	}
-
-	exercises, err := app.store.Exercise.GetAllUserExercises(c.Context(), userObjectID)
+	exercises, err := app.store.Exercise.GetAllUserExercises(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "failed to fetch exercises",
@@ -109,21 +95,17 @@ func (app *application) getAllUserExerciseHandler(c *fiber.Ctx) error {
 	})
 }
 
+// "/:exerciseID"
+// return custom exercise by user
 func (app *application) getExerciseByIDHandler(c *fiber.Ctx) error {
-	userIDstr := c.Params("userID")
-	exerciseIDstr := c.Params("exerciseID")
-
-	userID, err := primitive.ObjectIDFromHex(userIDstr)
-	if err != nil {
+	userID, exerciseID := getUserIDFromContext(c), getExerciseIDFromContext(c)
+	if userID == primitive.NilObjectID || exerciseID == primitive.NilObjectID {
+		missingID := "userID"
+		if exerciseID == primitive.NilObjectID {
+			missingID = "exerciseID"
+		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid userID format",
-		})
-	}
-
-	exerciseID, err := primitive.ObjectIDFromHex(exerciseIDstr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid routineID format",
+			"error": missingID + " not found in context",
 		})
 	}
 
@@ -132,34 +114,6 @@ func (app *application) getExerciseByIDHandler(c *fiber.Ctx) error {
 		if err == mongo.ErrNoDocuments {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 				"error": "Exercise not found or does not belong to the user",
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to fetch exercise",
-		})
-	}
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"message":  "Routine retrieved successfully",
-		"exercise": exercise,
-	})
-}
-
-func (app *application) searchExerciseByIDHandler(c *fiber.Ctx) error {
-	exerciseIDstr := c.Params("exerciseID")
-
-	exerciseID, err := primitive.ObjectIDFromHex(exerciseIDstr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid routineID format",
-		})
-	}
-
-	exercise, err := app.store.Exercise.SearchExerciseByID(c.Context(), exerciseID)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "Exercise not found",
 			})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -187,20 +141,14 @@ type updateExercisePayload struct {
 }
 
 func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
-	userIDStr := c.Params("userID")
-	exerciseIDStr := c.Params("exerciseID")
-
-	userID, err := primitive.ObjectIDFromHex(userIDStr)
-	if err != nil {
+	userID, exerciseID := getUserIDFromContext(c), getExerciseIDFromContext(c)
+	if userID == primitive.NilObjectID || exerciseID == primitive.NilObjectID {
+		missingID := "userID"
+		if exerciseID == primitive.NilObjectID {
+			missingID = "exerciseID"
+		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid userID format",
-		})
-	}
-
-	exerciseID, err := primitive.ObjectIDFromHex(exerciseIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid exerciseID format",
+			"error": missingID + " not found in context",
 		})
 	}
 
@@ -211,39 +159,31 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	if payload.Name == nil || *payload.Name == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Name cannot be empty",
-		})
-	}
-	if payload.Category == nil || *payload.Category == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Category cannot be empty",
-		})
-	}
-
 	if payload.ExpectedVersion == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Current version is required",
 		})
 	}
 
-	// Build updates map
-	updates := map[string]interface{}{
-		"name":             *payload.Name,
-		"force":            *payload.Force,
-		"level":            *payload.Level,
-		"mechanic":         *payload.Mechanic,
-		"equipment":        *payload.Equipment,
-		"primaryMuscles":   *payload.PrimaryMuscles,
-		"secondaryMuscles": *payload.SecondaryMuscles,
-		"instructions":     *payload.Instructions,
-		"category":         *payload.Category,
+	updates := make(map[string]interface{})
+
+	if payload.Name != nil {
+		updates["name"] = &payload.Name
+	}
+	if payload.Category != nil {
+		updates["category"] = &payload.Category
+	}
+
+	if len(updates) == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "No fields to update",
+		})
 	}
 
 	if err := app.store.Exercise.Update(c.Context(), exerciseID, userID, updates, payload.ExpectedVersion); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to update exercise",
+			"error":   "Failed to update routine",
+			"details": err.Error(),
 		})
 	}
 
@@ -253,22 +193,14 @@ func (app *application) updateExerciseHandler(c *fiber.Ctx) error {
 }
 
 func (app *application) deleteExerciseHandler(c *fiber.Ctx) error {
-	userIDStr := c.Params("userID")
-	exerciseIDStr := c.Params("exerciseID")
-
-	userID, err := primitive.ObjectIDFromHex(userIDStr)
-	if err != nil {
+	userID, exerciseID := getUserIDFromContext(c), getExerciseIDFromContext(c)
+	if userID == primitive.NilObjectID || exerciseID == primitive.NilObjectID {
+		missingID := "userID"
+		if exerciseID == primitive.NilObjectID {
+			missingID = "exerciseID"
+		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"details": err.Error(),
-			"error":   "Invalid userID format",
-		})
-	}
-
-	exerciseID, err := primitive.ObjectIDFromHex(exerciseIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"details": err.Error(),
-			"error":   "Invalid exerciseID format",
+			"error": missingID + " not found in context",
 		})
 	}
 
@@ -281,5 +213,34 @@ func (app *application) deleteExerciseHandler(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Exercise was successfully deleted",
+	})
+}
+
+// Search routes
+func (app *application) searchExerciseByIDHandler(c *fiber.Ctx) error {
+	exerciseIDstr := c.Params("exerciseID")
+
+	exerciseID, err := primitive.ObjectIDFromHex(exerciseIDstr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid routineID format",
+		})
+	}
+
+	exercise, err := app.store.Exercise.SearchExerciseByID(c.Context(), exerciseID)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Exercise not found",
+			})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch exercise",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message":  "Routine retrieved successfully",
+		"exercise": exercise,
 	})
 }

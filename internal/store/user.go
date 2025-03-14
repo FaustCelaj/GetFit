@@ -16,7 +16,7 @@ type User struct {
 	Email     string             `bson:"email" json:"email"`
 	Password  string             `bson:"password_hash" json:"password_hash"`
 	FirstName string             `bson:"first_name" json:"first_name"`
-	LasttName string             `bson:"last_name" json:"last_name"`
+	LastName  string             `bson:"last_name" json:"last_name"`
 	Age       int8               `bson:"age" json:"age"`
 	Title     string             `bson:"title" json:"title"`
 	Bio       string             `bson:"bio" json:"bio"`
@@ -87,6 +87,9 @@ func (s *UserStore) Update(ctx context.Context, userID primitive.ObjectID, updat
 	if firstName, ok := updates["first_name"]; ok {
 		updateFields["first_name"] = firstName
 	}
+	if lastName, ok := updates["last_name"]; ok {
+		updateFields["last_name"] = lastName
+	}
 	if age, ok := updates["age"]; ok {
 		updateFields["age"] = age
 	}
@@ -102,9 +105,13 @@ func (s *UserStore) Update(ctx context.Context, userID primitive.ObjectID, updat
 	update := bson.M{"$set": updateFields, "$inc": bson.M{"version": 1}}
 
 	// Perform the update
-	_, err := s.db.Collection(userCollection).UpdateOne(ctx, filter, update)
+	result, err := s.db.Collection(userCollection).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	if result.MatchedCount == 0 {
+		return ErrVersionMismatch
 	}
 
 	return nil

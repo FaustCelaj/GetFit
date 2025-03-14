@@ -13,6 +13,7 @@ var (
 	ErrNotFound          = errors.New("resource not found")
 	ErrConflict          = errors.New("resource already exists")
 	QueryTimeoutDuration = time.Second * 5
+	ErrVersionMismatch   = errors.New("version mismatch: record has been modified by another process")
 )
 
 type Storage struct {
