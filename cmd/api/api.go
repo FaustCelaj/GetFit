@@ -59,41 +59,48 @@ func (app *application) mount() *fiber.App {
 	search := api.Group("/search")
 	search.Get("/:exerciseID", app.searchExerciseByIDHandler)
 
-	userScoped := api.Group("/users/:userID")
+	userScoped := api.Group("/users/:userID", app.userContextMiddleware())
 
 	// Exercise Routes
 	exercise := userScoped.Group("/exercise")
 	exercise.Post("/", app.createExerciseHandler)
 	exercise.Get("/", app.getAllUserExerciseHandler)
-	exercise.Get("/:exerciseID", app.getExerciseByIDHandler)
-	exercise.Patch("/:exerciseID", app.updateExerciseHandler)
-	exercise.Delete("/:exerciseID", app.deleteExerciseHandler)
+
+	exerciseWithID := exercise.Group("/:exerciseID", app.exerciseContextMiddleware())
+	exerciseWithID.Get("/", app.getExerciseByIDHandler)
+	exerciseWithID.Patch("/", app.updateExerciseHandler)
+	exerciseWithID.Delete("/", app.deleteExerciseHandler)
 
 	// Routine Routes
 	routine := userScoped.Group("/routine")
 	routine.Post("/", app.createRoutineHandler)
 	routine.Get("/", app.getAllUserRoutinesIDHandler)
-	routine.Get("/:routineID", app.getRoutineByIDHandler)
-	routine.Patch("/:routineID", app.patchRoutineHandler)
-	routine.Delete("/:routineID", app.deleteRoutineHandler)
+
+	routineWithID := routine.Group("/:routineID", app.routineContextMiddleware())
+	routineWithID.Get("/", app.getRoutineByIDHandler)
+	routineWithID.Patch("/", app.patchRoutineHandler)
+	routineWithID.Delete("/", app.deleteRoutineHandler)
 
 	// Editing exercises in routines
-	routineExercise := routine.Group("/:routineID/exercise")
-	routineExercise.Post("/:exerciseID", app.addExerciseToRoutineHandler)
-	routineExercise.Patch("/:exerciseID", app.updateExerciseInRoutineHandler)
-	routineExercise.Delete("/:exerciseID", app.removeExerciseFromRoutineHandler)
+	routineExercise := routineWithID.Group("/exercise/:exerciseID", app.exerciseContextMiddleware())
+	routineExercise.Post("/", app.addExerciseToRoutineHandler)
+	routineExercise.Patch("/", app.updateExerciseInRoutineHandler)
+	routineExercise.Delete("/", app.removeExerciseFromRoutineHandler)
 
 	// Workout Session Routes (Actual performed workouts)
 	workouts := userScoped.Group("/workout")
 	workouts.Post("/", app.createWorkoutSessionHandler)
-	workouts.Post("/from-routine/:routineID", app.createWorkoutFromRoutineHandler)
 	workouts.Get("/", app.getAllWorkoutSessionsHandler)
-	workouts.Get("/:sessionID", app.getWorkoutSessionByIDHandler)
-	workouts.Post("/:sessionID/complete", app.completeWorkoutSessionHandler)
-	workouts.Delete("/:sessionID", app.deleteWorkoutSessionHandler)
 
-	// Routes for adding sets to exercises within a workout session
-	workoutSets := workouts.Group("/:sessionID/exercise/:exerciseID/sets")
+	workoutsFromRoutine := workouts.Group("/from-routine/:routineID", app.routineContextMiddleware())
+	workoutsFromRoutine.Post("/", app.createWorkoutFromRoutineHandler)
+
+	workoutSession := workouts.Group("/:sessionID", app.workoutContextMiddleware())
+	workoutSession.Get("/", app.getWorkoutSessionByIDHandler)
+	workoutSession.Post("/complete", app.completeWorkoutSessionHandler)
+	workoutSession.Delete("/", app.deleteWorkoutSessionHandler)
+
+	workoutSets := workoutSession.Group("/exercise/:exerciseID/sets", app.exerciseContextMiddleware())
 	workoutSets.Post("/", app.addSetToWorkoutHandler)
 
 	return fiberApp

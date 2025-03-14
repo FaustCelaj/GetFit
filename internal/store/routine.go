@@ -85,21 +85,30 @@ func (s *RoutineStore) Create(ctx context.Context, routine *Routine, userID prim
 		return fmt.Errorf("failed to create routine: %w", err)
 	}
 
-	// // Update the user document to include the routine ID
-	// _, err = s.db.Collection("user").UpdateOne(
-	// 	ctx,
-	// 	bson.M{"_id": userID},
-	// 	bson.M{"$push": bson.M{"routines": routine.ID}},
-	// )
-	// if err != nil {
-	// 	return fmt.Errorf("failed to associate routine with user: %w", err)
-	// }
-
 	return nil
 }
 
-// fetch all routines from a specified user
-// returns an array of routines
+// fetch single routines for user
+func (s *RoutineStore) GetByID(ctx context.Context, routineID, userID primitive.ObjectID) (*Routine, error) {
+	routine := &Routine{}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"_id":     routineID,
+		"user_id": userID,
+	}
+
+	// Find the routine
+	err := s.db.Collection(routineCollection).FindOne(ctx, filter).Decode(routine)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch routine: %w", err)
+	}
+
+	return routine, nil
+}
+
+// fetch all routines for user
 func (s *RoutineStore) GetAllUserRoutines(ctx context.Context, userID primitive.ObjectID) ([]*Routine, error) {
 	var routines []*Routine
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -118,26 +127,6 @@ func (s *RoutineStore) GetAllUserRoutines(ctx context.Context, userID primitive.
 	}
 
 	return routines, nil
-}
-
-// Get a routine by routineID and userID
-func (s *RoutineStore) GetByID(ctx context.Context, routineID, userID primitive.ObjectID) (*Routine, error) {
-	routine := &Routine{}
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	filter := bson.M{
-		"_id":     routineID,
-		"user_id": userID,
-	}
-
-	// Find the routine
-	err := s.db.Collection(routineCollection).FindOne(ctx, filter).Decode(routine)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch routine: %w", err)
-	}
-
-	return routine, nil
 }
 
 // update a routine

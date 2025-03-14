@@ -8,20 +8,19 @@ import (
 
 // Add an exercise to a routine with template sets
 func (app *application) addExerciseToRoutineHandler(c *fiber.Ctx) error {
-	userID := c.Params("userID")
-	routineID := c.Params("routineID")
-	exerciseID := c.Params("exerciseID")
-
-	if userID == "" || routineID == "" || exerciseID == "" {
+	userID := getUserIDFromContext(c)
+	if userID == primitive.NilObjectID {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "userID, routineID, and exerciseID are required",
+			"error": "userID not found in context",
 		})
 	}
 
-	userObjectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
+	routineID := c.Params("routineID")
+	exerciseID := c.Params("exerciseID")
+
+	if routineID == "" || exerciseID == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid userID format",
+			"error": "userID, routineID, and exerciseID are required",
 		})
 	}
 
@@ -61,7 +60,7 @@ func (app *application) addExerciseToRoutineHandler(c *fiber.Ctx) error {
 	err = app.store.Routine.AddExerciseToRoutine(
 		c.Context(),
 		routineObjectID,
-		userObjectID,
+		userID,
 		exerciseObjectID,
 		payload.TemplateSets,
 		payload.Version,

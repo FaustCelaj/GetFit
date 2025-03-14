@@ -7,19 +7,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// "/routine"
 func (app *application) createRoutineHandler(c *fiber.Ctx) error {
-	userID := c.Params("userID")
-	if userID == "" {
+	userID := getUserIDFromContext(c)
+	if userID == primitive.NilObjectID {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "userID is required",
-		})
-	}
-
-	// Convert userID to a primitive.ObjectID
-	userObjectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid userID format",
+			"error": "userID not found in context",
 		})
 	}
 
@@ -38,10 +31,10 @@ func (app *application) createRoutineHandler(c *fiber.Ctx) error {
 	}
 
 	// Set the userID for the routine
-	routine.UserID = userObjectID
+	routine.UserID = userID
 
 	// Call the Create method in RoutineStore
-	err = app.store.Routine.Create(c.Context(), &routine, userObjectID)
+	err := app.store.Routine.Create(c.Context(), &routine, userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "failed to create routine",
@@ -55,26 +48,15 @@ func (app *application) createRoutineHandler(c *fiber.Ctx) error {
 	})
 }
 
-// fetch all routines from a specified user
-// returns an array of routines
 func (app *application) getAllUserRoutinesIDHandler(c *fiber.Ctx) error {
-	userID := c.Params("userID")
-	if userID == "" {
+	userID := getUserIDFromContext(c)
+	if userID == primitive.NilObjectID {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "userID is required",
+			"error": "userID not found in context",
 		})
 	}
 
-	// Convert userID to a primitive.ObjectID
-	userObjectID, err := primitive.ObjectIDFromHex(userID)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "invalid userID format",
-		})
-	}
-
-	// Call the storage layer to retrieve routines
-	routines, err := app.store.Routine.GetAllUserRoutines(c.Context(), userObjectID)
+	routines, err := app.store.Routine.GetAllUserRoutines(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error":   "failed to fetch routines",
@@ -88,28 +70,19 @@ func (app *application) getAllUserRoutinesIDHandler(c *fiber.Ctx) error {
 	})
 }
 
-// fetch routine by routine ID (returns a single routine)
+// "/:routineID"
 func (app *application) getRoutineByIDHandler(c *fiber.Ctx) error {
-	userIDStr := c.Params("userID")
-	routineIDStr := c.Params("routineID")
-
-	// Validate and convert userID
-	userID, err := primitive.ObjectIDFromHex(userIDStr)
-	if err != nil {
+	userID, routineID := getUserIDFromContext(c), getRoutineIDFromContext(c)
+	if userID == primitive.NilObjectID || routineID == primitive.NilObjectID {
+		missingID := "userID"
+		if routineID == primitive.NilObjectID {
+			missingID = "sessionID"
+		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid userID format",
+			"error": missingID + " not found in context",
 		})
 	}
 
-	// Validate and convert routineID
-	routineID, err := primitive.ObjectIDFromHex(routineIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid routineID format",
-		})
-	}
-
-	// Retrieve routine using the storage layer
 	routine, err := app.store.Routine.GetByID(c.Context(), routineID, userID)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -122,7 +95,6 @@ func (app *application) getRoutineByIDHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	// Return the routine in the response
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "Routine retrieved successfully",
 		"routine": routine,
@@ -136,35 +108,25 @@ type updateRoutinePayload struct {
 	ExpectedVersion int16     `json:"expected_version"`
 }
 
-// update a specific routine by ID and user ID for validation
 func (app *application) patchRoutineHandler(c *fiber.Ctx) error {
-	userIDStr := c.Params("userID")
-	routineIDStr := c.Params("routineID")
-
-	// Validate and convert userID
-	userID, err := primitive.ObjectIDFromHex(userIDStr)
-	if err != nil {
+	userID, routineID := getUserIDFromContext(c), getRoutineIDFromContext(c)
+	if userID == primitive.NilObjectID || routineID == primitive.NilObjectID {
+		missingID := "userID"
+		if routineID == primitive.NilObjectID {
+			missingID = "sessionID"
+		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid userID format",
-		})
-	}
-
-	// Validate and convert routineID
-	routineID, err := primitive.ObjectIDFromHex(routineIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid routineID format",
+			"error": missingID + " not found in context",
 		})
 	}
 
 	var payload updateRoutinePayload
-	// validate payload
 	if err := c.BodyParser(&payload); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request body",
 		})
 	}
-	// validate version
+
 	if payload.ExpectedVersion == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Current version is required",
@@ -172,11 +134,18 @@ func (app *application) patchRoutineHandler(c *fiber.Ctx) error {
 	}
 
 	updates := make(map[string]interface{})
+
 	if payload.Title != nil {
 		updates["title"] = &payload.Title
 	}
 	if payload.Description != nil {
 		updates["description"] = &payload.Description
+	}
+
+	if requiredField, ok := updates["requiredField"]; !ok || requiredField == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "RequiredField cannot be empty",
+		})
 	}
 
 	if len(updates) == 0 {
@@ -200,22 +169,14 @@ func (app *application) patchRoutineHandler(c *fiber.Ctx) error {
 }
 
 func (app *application) deleteRoutineHandler(c *fiber.Ctx) error {
-	userIDStr := c.Params("userID")
-	routineIDStr := c.Params("routineID")
-
-	// Validate and convert userID
-	userID, err := primitive.ObjectIDFromHex(userIDStr)
-	if err != nil {
+	userID, routineID := getUserIDFromContext(c), getRoutineIDFromContext(c)
+	if userID == primitive.NilObjectID || routineID == primitive.NilObjectID {
+		missingID := "userID"
+		if routineID == primitive.NilObjectID {
+			missingID = "sessionID"
+		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid userID format",
-		})
-	}
-
-	// Validate and convert routineID
-	routineID, err := primitive.ObjectIDFromHex(routineIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid routineID format",
+			"error": missingID + " not found in context",
 		})
 	}
 

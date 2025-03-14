@@ -34,6 +34,24 @@ type ExerciseStore struct {
 
 const exerciseCollection = "exercise"
 
+// Get single exercise
+func (s *ExerciseStore) SearchExerciseByID(ctx context.Context, exerciseID primitive.ObjectID) (*Exercise, error) {
+	exercise := &Exercise{}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": exerciseID}
+
+	err := s.db.Collection(exerciseCollection).FindOne(ctx, filter).Decode(exercise)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch exercise: %w", err)
+	}
+
+	return exercise, nil
+}
+
+// CUSTOM EXERCSIE ROUTES //
+
 // create a custom exercise
 func (s *ExerciseStore) Create(ctx context.Context, exercise *Exercise, userID primitive.ObjectID) error {
 	// Generate a new ObjectID and assign a timestamp.
@@ -56,15 +74,6 @@ func (s *ExerciseStore) Create(ctx context.Context, exercise *Exercise, userID p
 		return fmt.Errorf("failed to insert exercise: %w", err)
 	}
 
-	// // Update user to include custom exerciseID
-	// _, err = s.db.Collection("user").UpdateOne(
-	// 	ctx,
-	// 	bson.M{"_id": userID},
-	// 	bson.M{"$push": bson.M{"custom_exercises": exercise.ID}},
-	// )
-	// if err != nil {
-	// 	return fmt.Errorf("failed to associate custom exercise with user: %w", err)
-	// }
 	return nil
 }
 
@@ -90,7 +99,7 @@ func (s *ExerciseStore) GetAllUserExercises(ctx context.Context, userID primitiv
 	return exercises, nil
 }
 
-// return a single exercise by a exercsie ID and user id for validation
+// return 1 specified custom exercise
 func (s *ExerciseStore) GetByID(ctx context.Context, exerciseID, userID primitive.ObjectID) (*Exercise, error) {
 	exercise := &Exercise{}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -109,21 +118,7 @@ func (s *ExerciseStore) GetByID(ctx context.Context, exerciseID, userID primitiv
 	return exercise, nil
 }
 
-func (s *ExerciseStore) SearchExerciseByID(ctx context.Context, exerciseID primitive.ObjectID) (*Exercise, error) {
-	exercise := &Exercise{}
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	filter := bson.M{"_id": exerciseID}
-
-	err := s.db.Collection(exerciseCollection).FindOne(ctx, filter).Decode(exercise)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch exercise: %w", err)
-	}
-
-	return exercise, nil
-}
-
+// update custom exercise
 func (s *ExerciseStore) Update(ctx context.Context, exerciseID, userID primitive.ObjectID, updates map[string]interface{}, expectedVersion int16) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
