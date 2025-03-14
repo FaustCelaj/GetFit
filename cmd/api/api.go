@@ -1,13 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/FaustCelaj/GetFit.git/docs" // required to generate swagger docs
 	"github.com/FaustCelaj/GetFit.git/internal/store"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	swagger "github.com/gofiber/swagger"
 )
 
 type application struct {
@@ -16,9 +19,10 @@ type application struct {
 }
 
 type config struct {
-	addr string
-	db   dbConfig
-	env  string
+	addr   string
+	db     dbConfig
+	env    string
+	apiURL string
 }
 
 type dbConfig struct {
@@ -28,6 +32,10 @@ type dbConfig struct {
 }
 
 func (app *application) mount() *fiber.App {
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Host = app.config.apiURL
+	docs.SwaggerInfo.BasePath = "/v1"
+
 	// Create a new Fiber instance
 	fiberApp := fiber.New(fiber.Config{
 		ReadTimeout:  10 * time.Second,
@@ -49,6 +57,10 @@ func (app *application) mount() *fiber.App {
 
 	// Health Check
 	api.Get("/health", app.healthCheckHandler)
+	docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
+	api.Get("/swagger/*", swagger.New(swagger.Config{
+		URL: docsURL,
+	}))
 
 	user := api.Group("/user")
 	user.Get("/:userID", app.getUserHandler)
