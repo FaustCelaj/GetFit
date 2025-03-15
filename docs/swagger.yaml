@@ -1,4 +1,242 @@
 basePath: /api/v1
+definitions:
+  main.addSetPayload:
+    properties:
+      reps:
+        type: integer
+      set_number:
+        type: integer
+      weight:
+        type: number
+    type: object
+  main.updateExercisePayload:
+    properties:
+      category:
+        type: string
+      equipment:
+        type: string
+      expected_version:
+        type: integer
+      force:
+        type: string
+      instructions:
+        items:
+          type: string
+        type: array
+      level:
+        type: string
+      mechanic:
+        type: string
+      name:
+        type: string
+      primaryMuscles:
+        items:
+          type: string
+        type: array
+      secondaryMuscles:
+        items:
+          type: string
+        type: array
+    type: object
+  main.updateRoutinePayload:
+    properties:
+      description:
+        type: string
+      exercise_id:
+        items:
+          type: string
+        type: array
+      expected_version:
+        type: integer
+      title:
+        type: string
+    type: object
+  main.updateUserPayload:
+    properties:
+      age:
+        type: integer
+      bio:
+        type: string
+      email:
+        type: string
+      expected_version:
+        type: integer
+      first_name:
+        type: string
+      last_name:
+        type: string
+      title:
+        type: string
+      username:
+        type: string
+    type: object
+  store.Exercise:
+    properties:
+      category:
+        type: string
+      created_at:
+        type: string
+      equipment:
+        type: string
+      force:
+        type: string
+      id:
+        type: string
+      instructions:
+        items:
+          type: string
+        type: array
+      is_custom:
+        type: boolean
+      level:
+        type: string
+      mechanic:
+        type: string
+      name:
+        type: string
+      primaryMuscles:
+        items:
+          type: string
+        type: array
+      secondaryMuscles:
+        items:
+          type: string
+        type: array
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      version:
+        type: integer
+    type: object
+  store.Routine:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      exercises:
+        items:
+          $ref: '#/definitions/store.RoutineExercise'
+        type: array
+      id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      version:
+        type: integer
+    type: object
+  store.RoutineExercise:
+    properties:
+      exercise_id:
+        type: string
+      order:
+        type: integer
+      template_sets:
+        items:
+          $ref: '#/definitions/store.TemplateSet'
+        type: array
+    type: object
+  store.SessionExercise:
+    properties:
+      completed_sets:
+        items:
+          $ref: '#/definitions/store.SessionSet'
+        type: array
+      exercise_id:
+        type: string
+      order:
+        description: Position in the workout
+        type: integer
+    type: object
+  store.SessionSet:
+    properties:
+      completed_at:
+        type: string
+      reps:
+        type: integer
+      set_number:
+        type: integer
+      weight:
+        type: number
+    type: object
+  store.TemplateSet:
+    properties:
+      reps:
+        type: integer
+      set_number:
+        type: integer
+      weight:
+        type: number
+    type: object
+  store.User:
+    properties:
+      age:
+        type: integer
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      password_hash:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+      version:
+        type: integer
+    type: object
+  store.WorkoutSession:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      end_time:
+        type: string
+      exercises:
+        items:
+          $ref: '#/definitions/store.SessionExercise'
+        type: array
+      id:
+        type: string
+      metrics:
+        additionalProperties: true
+        description: For calculated values like total weight lifted
+        type: object
+      notes:
+        type: string
+      routine_id:
+        description: 'Optional: may be a routine-based or freestyle workout'
+        type: string
+      start_time:
+        type: string
+      status:
+        description: '"in_progress", "completed"'
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+      version:
+        type: integer
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -12,7 +250,916 @@ info:
   termsOfService: http://swagger.io/terms/
   title: GetFit API
   version: 0.0.1
-paths: {}
+paths:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check if the API is up and running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API status and version
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check endpoint
+      tags:
+      - health
+  /search/{exerciseID}:
+    get:
+      consumes:
+      - application/json
+      description: Find an exercise using its ID without user context
+      parameters:
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exercise information
+          schema:
+            $ref: '#/definitions/store.Exercise'
+        "400":
+          description: Invalid exercise ID format
+          schema: {}
+        "404":
+          description: Exercise not found
+          schema: {}
+        "500":
+          description: Failed to fetch exercise
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Search for an exercise by ID
+      tags:
+      - exercises
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user in the system with username, email, and other
+        basic information
+      parameters:
+      - description: User information including username, email, and password
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/store.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Returns the created user ID
+          schema: {}
+        "400":
+          description: Invalid request body
+          schema: {}
+        "500":
+          description: Failed to create user
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new user
+      tags:
+      - users
+  /user/{userID}:
+    delete:
+      consumes:
+      - application/json
+      description: Permanently remove a user from the system
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User was successfully deleted
+          schema: {}
+        "400":
+          description: Invalid user ID format
+          schema: {}
+        "500":
+          description: Failed to delete user
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a user's information by their ID
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User information
+          schema:
+            $ref: '#/definitions/store.User'
+        "400":
+          description: Invalid user ID format
+          schema: {}
+        "404":
+          description: User not found
+          schema: {}
+        "500":
+          description: Failed to fetch user
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get user by ID
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Update one or more fields of a user's profile
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Updated user information
+        in: body
+        name: userData
+        required: true
+        schema:
+          $ref: '#/definitions/main.updateUserPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema: {}
+        "400":
+          description: Invalid request body or missing fields
+          schema: {}
+        "409":
+          description: Version conflict - record has been modified
+          schema: {}
+        "500":
+          description: Failed to update user
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Update user information
+      tags:
+      - users
+  /users/{userID}/exercise:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all exercises created by a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of exercises
+          schema:
+            items:
+              $ref: '#/definitions/store.Exercise'
+            type: array
+        "400":
+          description: Invalid user ID
+          schema: {}
+        "500":
+          description: Failed to fetch exercises
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get all exercises for a user
+      tags:
+      - exercises
+    post:
+      consumes:
+      - application/json
+      description: Create a custom exercise for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Exercise information
+        in: body
+        name: exercise
+        required: true
+        schema:
+          $ref: '#/definitions/store.Exercise'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Exercise created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or missing required fields
+          schema: {}
+        "500":
+          description: Failed to create exercise
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new exercise
+      tags:
+      - exercises
+  /users/{userID}/exercise/{exerciseID}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an exercise from the system
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exercise successfully deleted
+          schema:
+            type: string
+        "400":
+          description: Invalid ID format
+          schema: {}
+        "500":
+          description: Failed to delete exercise
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete an exercise
+      tags:
+      - exercises
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific exercise by its ID
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exercise information
+          schema:
+            $ref: '#/definitions/store.Exercise'
+        "400":
+          description: Invalid ID format
+          schema: {}
+        "404":
+          description: Exercise not found
+          schema: {}
+        "500":
+          description: Failed to fetch exercise
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get exercise by ID
+      tags:
+      - exercises
+    patch:
+      consumes:
+      - application/json
+      description: Update an existing exercise's details
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      - description: Updated exercise information
+        in: body
+        name: exercise
+        required: true
+        schema:
+          $ref: '#/definitions/main.updateExercisePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exercise updated successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or missing fields
+          schema: {}
+        "404":
+          description: Exercise not found
+          schema: {}
+        "500":
+          description: Failed to update exercise
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Update an exercise
+      tags:
+      - exercises
+  /users/{userID}/routine:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all workout routines created by a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of routines
+          schema:
+            items:
+              $ref: '#/definitions/store.Routine'
+            type: array
+        "400":
+          description: Invalid user ID
+          schema: {}
+        "500":
+          description: Failed to fetch routines
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get all user routines
+      tags:
+      - routines
+    post:
+      consumes:
+      - application/json
+      description: Create a structured workout routine with exercise templates
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Routine information
+        in: body
+        name: routine
+        required: true
+        schema:
+          $ref: '#/definitions/store.Routine'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Routine created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or missing fields
+          schema: {}
+        "500":
+          description: Failed to create routine
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new workout routine
+      tags:
+      - routines
+  /users/{userID}/routine/{routineID}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a workout routine from the system
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Routine ID
+        in: path
+        name: routineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Routine successfully deleted
+          schema:
+            type: string
+        "400":
+          description: Invalid ID format
+          schema: {}
+        "500":
+          description: Failed to delete routine
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a routine
+      tags:
+      - routines
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific workout routine by its ID
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Routine ID
+        in: path
+        name: routineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Routine information
+          schema:
+            $ref: '#/definitions/store.Routine'
+        "400":
+          description: Invalid ID format
+          schema: {}
+        "404":
+          description: Routine not found
+          schema: {}
+        "500":
+          description: Failed to fetch routine
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get routine by ID
+      tags:
+      - routines
+    patch:
+      consumes:
+      - application/json
+      description: Update details of an existing workout routine
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Routine ID
+        in: path
+        name: routineID
+        required: true
+        type: string
+      - description: Updated routine information
+        in: body
+        name: routine
+        required: true
+        schema:
+          $ref: '#/definitions/main.updateRoutinePayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Routine updated successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or missing fields
+          schema: {}
+        "404":
+          description: Routine not found
+          schema: {}
+        "500":
+          description: Failed to update routine
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Update a routine
+      tags:
+      - routines
+  /users/{userID}/routine/{routineID}/exercise/{exerciseID}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove an exercise from a workout routine
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Routine ID
+        in: path
+        name: routineID
+        required: true
+        type: string
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      - description: Expected version for optimistic concurrency
+        in: body
+        name: version
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exercise removed from routine successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid IDs or version
+          schema: {}
+        "500":
+          description: Failed to remove exercise from routine
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Remove exercise from routine
+      tags:
+      - routine-exercises
+    patch:
+      consumes:
+      - application/json
+      description: Update template sets for an exercise in a routine
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Routine ID
+        in: path
+        name: routineID
+        required: true
+        type: string
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      - description: Updated template sets with version
+        in: body
+        name: data
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exercise template sets updated successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or IDs
+          schema: {}
+        "500":
+          description: Failed to update exercise in routine
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Update exercise in routine
+      tags:
+      - routine-exercises
+    post:
+      consumes:
+      - application/json
+      description: Add an exercise with template sets to a workout routine
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Routine ID
+        in: path
+        name: routineID
+        required: true
+        type: string
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      - description: Template sets information with version
+        in: body
+        name: data
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Exercise added to routine successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or IDs
+          schema: {}
+        "500":
+          description: Failed to add exercise to routine
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Add exercise to routine
+      tags:
+      - routine-exercises
+  /users/{userID}/workout:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all workout sessions for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of workout sessions
+          schema:
+            items:
+              $ref: '#/definitions/store.WorkoutSession'
+            type: array
+        "400":
+          description: Invalid user ID
+          schema: {}
+        "500":
+          description: Failed to fetch workout sessions
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get all workout sessions
+      tags:
+      - workouts
+    post:
+      consumes:
+      - application/json
+      description: Start a new workout session from scratch
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Workout session information
+        in: body
+        name: session
+        required: true
+        schema:
+          $ref: '#/definitions/store.WorkoutSession'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Workout session created successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or missing fields
+          schema: {}
+        "500":
+          description: Failed to create workout session
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new workout session
+      tags:
+      - workouts
+  /users/{userID}/workout/{sessionID}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a workout session from the system
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Session ID
+        in: path
+        name: sessionID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workout session deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid ID format
+          schema: {}
+        "500":
+          description: Failed to delete workout session
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a workout session
+      tags:
+      - workouts
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific workout session by its ID
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Session ID
+        in: path
+        name: sessionID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workout session information
+          schema:
+            $ref: '#/definitions/store.WorkoutSession'
+        "400":
+          description: Invalid ID format
+          schema: {}
+        "404":
+          description: Workout session not found
+          schema: {}
+        "500":
+          description: Failed to fetch workout session
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get workout session by ID
+      tags:
+      - workouts
+  /users/{userID}/workout/{sessionID}/complete:
+    post:
+      consumes:
+      - application/json
+      description: Mark a workout session as completed and calculate metrics
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Session ID
+        in: path
+        name: sessionID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workout completed successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid ID format
+          schema: {}
+        "500":
+          description: Failed to complete workout
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Complete a workout session
+      tags:
+      - workouts
+  /users/{userID}/workout/{sessionID}/exercise/{exerciseID}/sets:
+    post:
+      consumes:
+      - application/json
+      description: Record a completed set for an exercise in a workout
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Session ID
+        in: path
+        name: sessionID
+        required: true
+        type: string
+      - description: Exercise ID
+        in: path
+        name: exerciseID
+        required: true
+        type: string
+      - description: Set information
+        in: body
+        name: set
+        required: true
+        schema:
+          $ref: '#/definitions/main.addSetPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Set added to workout successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body or IDs
+          schema: {}
+        "500":
+          description: Failed to add set to workout
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Add a set to a workout exercise
+      tags:
+      - workout-sets
+  /users/{userID}/workout/from-routine/{routineID}:
+    post:
+      consumes:
+      - application/json
+      description: Create a new workout session based on an existing routine
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      - description: Routine ID
+        in: path
+        name: routineID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Workout created from routine successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid IDs
+          schema: {}
+        "500":
+          description: Failed to create workout from routine
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create workout from routine
+      tags:
+      - workouts
 securityDefinitions:
   ApiKeyAuth:
     in: header

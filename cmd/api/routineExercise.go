@@ -6,7 +6,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Add an exercise to a routine with template sets
+// AddExerciseToRoutine godoc
+//
+//	@Summary		Add exercise to routine
+//	@Description	Add an exercise with template sets to a workout routine
+//	@Tags			routine-exercises
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string	true	"User ID"
+//	@Param			routineID	path		string	true	"Routine ID"
+//	@Param			exerciseID	path		string	true	"Exercise ID"
+//	@Param			data		body		object	true	"Template sets information with version"
+//	@Success		200			{object}	string	"Exercise added to routine successfully"
+//	@Failure		400			{object}	error	"Invalid request body or IDs"
+//	@Failure		500			{object}	error	"Failed to add exercise to routine"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/routine/{routineID}/exercise/{exerciseID} [post]
 func (app *application) addExerciseToRoutineHandler(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
 	if userID == primitive.NilObjectID {
@@ -78,7 +95,24 @@ func (app *application) addExerciseToRoutineHandler(c *fiber.Ctx) error {
 	})
 }
 
-// Update an exercise's template sets in a routine
+// UpdateExerciseInRoutine godoc
+//
+//	@Summary		Update exercise in routine
+//	@Description	Update template sets for an exercise in a routine
+//	@Tags			routine-exercises
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string	true	"User ID"
+//	@Param			routineID	path		string	true	"Routine ID"
+//	@Param			exerciseID	path		string	true	"Exercise ID"
+//	@Param			data		body		object	true	"Updated template sets with version"
+//	@Success		200			{object}	string	"Exercise template sets updated successfully"
+//	@Failure		400			{object}	error	"Invalid request body or IDs"
+//	@Failure		500			{object}	error	"Failed to update exercise in routine"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/routine/{routineID}/exercise/{exerciseID} [patch]
 func (app *application) updateExerciseInRoutineHandler(c *fiber.Ctx) error {
 	userID := c.Params("userID")
 	routineID := c.Params("routineID")
@@ -151,7 +185,24 @@ func (app *application) updateExerciseInRoutineHandler(c *fiber.Ctx) error {
 	})
 }
 
-// Remove an exercise from a routine
+// RemoveExerciseFromRoutine godoc
+//
+//	@Summary		Remove exercise from routine
+//	@Description	Remove an exercise from a workout routine
+//	@Tags			routine-exercises
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string	true	"User ID"
+//	@Param			routineID	path		string	true	"Routine ID"
+//	@Param			exerciseID	path		string	true	"Exercise ID"
+//	@Param			version		body		object	true	"Expected version for optimistic concurrency"
+//	@Success		200			{object}	string	"Exercise removed from routine successfully"
+//	@Failure		400			{object}	error	"Invalid IDs or version"
+//	@Failure		500			{object}	error	"Failed to remove exercise from routine"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/routine/{routineID}/exercise/{exerciseID} [delete]
 func (app *application) removeExerciseFromRoutineHandler(c *fiber.Ctx) error {
 	userID := c.Params("userID")
 	routineID := c.Params("routineID")

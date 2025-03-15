@@ -1,0 +1,44 @@
+# Binaries and executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+tmp/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE and editor specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.envrc
+
+# Go workspace file
+go.work
+
+# MongoDB data
+data/
+
+# Air build errors log
+build-errors.log
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Generated docs
+docs/
