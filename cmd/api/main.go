@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
 
 	"github.com/FaustCelaj/GetFit.git/internal/db"
 	"github.com/FaustCelaj/GetFit.git/internal/env"
 	"github.com/FaustCelaj/GetFit.git/internal/store"
+	"go.uber.org/zap"
 )
 
 const version = "0.0.1"
@@ -45,16 +45,20 @@ func main() {
 		env: env.GetString("ENV", "development"),
 	}
 
+	// Logger
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
 	client, err := db.New(
 		cfg.db.addr,
 		cfg.db.maxOpenConns,
 		cfg.db.maxIdleTime)
 
 	if err != nil {
-		log.Fatalf("Failed to connect to MongoDB: %v", err)
+		logger.Fatal(err)
 	}
 	defer client.Disconnect(context.Background())
-	log.Println("MongoDB connection established")
+	logger.Info("MongoDB connection established")
 
 	store := store.NewMongoDBStorage(client.Database("getfit"))
 
@@ -62,14 +66,15 @@ func main() {
 	app := &application{
 		config: cfg,
 		store:  store,
+		logger: logger,
 	}
 
 	// Mount routes
 	fiberApp := app.mount()
 
 	// Start the server
-	log.Printf("Server is running on http://localhost%s", app.config.addr)
+	logger.Infof("Server is running on http://localhost%s", app.config.addr)
 	if err := fiberApp.Listen(app.config.addr); err != nil {
-		log.Fatalf("Error starting server: %v", err)
+		logger.Fatal(err)
 	}
 }

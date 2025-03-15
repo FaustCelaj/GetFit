@@ -11,11 +11,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	swagger "github.com/gofiber/swagger"
+	"go.uber.org/zap"
 )
 
 type application struct {
 	config config
 	store  store.Storage
+	logger *zap.SugaredLogger
 }
 
 type config struct {
@@ -44,7 +46,10 @@ func (app *application) mount() *fiber.App {
 	})
 
 	// Add middlewares
-	fiberApp.Use(logger.New())  // Logs all requests
+	// Logs all requests in HTTP level vs zap logs application level
+	fiberApp.Use(logger.New(logger.Config{
+		Format: "${time} ${status} - ${method} ${path}\n",
+	}))
 	fiberApp.Use(recover.New()) // Recovers from panics
 	fiberApp.Use(cors.New(cors.Config{
 		AllowOrigins: "http://localhost:5173,https://your-deployed-frontend.vercel.app",
