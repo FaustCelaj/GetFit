@@ -11,26 +11,26 @@ import (
 
 const version = "0.0.1"
 
-// @title GetFit API
-// @version 0.0.1
-// @description API for tracking workouts, exercises, and fitness routines
-// @termsOfService http://swagger.io/terms/
+//	@title			GetFit API
+//	@version		0.0.1
+//	@description	API for tracking workouts, exercises, and fitness routines
+//	@termsOfService	http://swagger.io/terms/
 
-// @contact.name API Support
-// @contact.url http://www.yoursite.com/support
-// @contact.email your.email@example.com
+//	@contact.name	API Support
+//	@contact.url	http://www.yoursite.com/support
+//	@contact.email	your.email@example.com
 
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
+//	@license.name	MIT
+//	@license.url	https://opensource.org/licenses/MIT
 
-// @host localhost:8080
-// @BasePath /api/v1
+//	@host						localhost:8080
+//	@BasePath					/api/v1
 //
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Authorization
-// @description
-// @schemes http
+//	@securityDefinitions.apikey	ApiKeyAuth
+//	@in							header
+//	@name						Authorization
+//	@description
+//	@schemes	http
 
 func main() {
 	// Set up configuration

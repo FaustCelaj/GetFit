@@ -9,7 +9,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// "/workout"
+// CreateWorkoutSession godoc
+//
+//	@Summary		Create a new workout session
+//	@Description	Start a new workout session from scratch
+//	@Tags			workouts
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID	path		string					true	"User ID"
+//	@Param			session	body		store.WorkoutSession	true	"Workout session information"
+//	@Success		201		{object}	string					"Workout session created successfully"
+//	@Failure		400		{object}	error					"Invalid request body or missing fields"
+//	@Failure		500		{object}	error					"Failed to create workout session"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/workout [post]
 func (app *application) createWorkoutSessionHandler(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
 	if userID == primitive.NilObjectID {
@@ -50,6 +65,21 @@ func (app *application) createWorkoutSessionHandler(c *fiber.Ctx) error {
 	})
 }
 
+// GetAllWorkoutSessions godoc
+//
+//	@Summary		Get all workout sessions
+//	@Description	Retrieve all workout sessions for a user
+//	@Tags			workouts
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID	path		string					true	"User ID"
+//	@Success		200		{array}		store.WorkoutSession	"List of workout sessions"
+//	@Failure		400		{object}	error					"Invalid user ID"
+//	@Failure		500		{object}	error					"Failed to fetch workout sessions"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/workout [get]
 func (app *application) getAllWorkoutSessionsHandler(c *fiber.Ctx) error {
 	userID := getUserIDFromContext(c)
 	if userID == primitive.NilObjectID {
@@ -72,7 +102,22 @@ func (app *application) getAllWorkoutSessionsHandler(c *fiber.Ctx) error {
 	})
 }
 
-// "/from-routine/:routineID"
+// CreateWorkoutFromRoutine godoc
+//
+//	@Summary		Create workout from routine
+//	@Description	Create a new workout session based on an existing routine
+//	@Tags			workouts
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string	true	"User ID"
+//	@Param			routineID	path		string	true	"Routine ID"
+//	@Success		201			{object}	string	"Workout created from routine successfully"
+//	@Failure		400			{object}	error	"Invalid IDs"
+//	@Failure		500			{object}	error	"Failed to create workout from routine"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/workout/from-routine/{routineID} [post]
 func (app *application) createWorkoutFromRoutineHandler(c *fiber.Ctx) error {
 	userID, routineID := getUserIDFromContext(c), getRoutineIDFromContext(c)
 	if userID == primitive.NilObjectID || routineID == primitive.NilObjectID {
@@ -100,7 +145,23 @@ func (app *application) createWorkoutFromRoutineHandler(c *fiber.Ctx) error {
 	})
 }
 
-// "/:sessionID"
+// GetWorkoutSessionByID godoc
+//
+//	@Summary		Get workout session by ID
+//	@Description	Retrieve a specific workout session by its ID
+//	@Tags			workouts
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string					true	"User ID"
+//	@Param			sessionID	path		string					true	"Session ID"
+//	@Success		200			{object}	store.WorkoutSession	"Workout session information"
+//	@Failure		400			{object}	error					"Invalid ID format"
+//	@Failure		404			{object}	error					"Workout session not found"
+//	@Failure		500			{object}	error					"Failed to fetch workout session"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/workout/{sessionID} [get]
 func (app *application) getWorkoutSessionByIDHandler(c *fiber.Ctx) error {
 	userID, sessionID := getUserIDFromContext(c), getSessionIDFromContext(c)
 	if userID == primitive.NilObjectID || sessionID == primitive.NilObjectID {
@@ -131,6 +192,22 @@ func (app *application) getWorkoutSessionByIDHandler(c *fiber.Ctx) error {
 	})
 }
 
+// CompleteWorkoutSession godoc
+//
+//	@Summary		Complete a workout session
+//	@Description	Mark a workout session as completed and calculate metrics
+//	@Tags			workouts
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string	true	"User ID"
+//	@Param			sessionID	path		string	true	"Session ID"
+//	@Success		200			{object}	string	"Workout completed successfully"
+//	@Failure		400			{object}	error	"Invalid ID format"
+//	@Failure		500			{object}	error	"Failed to complete workout"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/workout/{sessionID}/complete [post]
 func (app *application) completeWorkoutSessionHandler(c *fiber.Ctx) error {
 	userID, sessionID := getUserIDFromContext(c), getSessionIDFromContext(c)
 	if userID == primitive.NilObjectID || sessionID == primitive.NilObjectID {
@@ -156,6 +233,22 @@ func (app *application) completeWorkoutSessionHandler(c *fiber.Ctx) error {
 	})
 }
 
+// DeleteWorkoutSession godoc
+//
+//	@Summary		Delete a workout session
+//	@Description	Remove a workout session from the system
+//	@Tags			workouts
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string	true	"User ID"
+//	@Param			sessionID	path		string	true	"Session ID"
+//	@Success		200			{object}	string	"Workout session deleted successfully"
+//	@Failure		400			{object}	error	"Invalid ID format"
+//	@Failure		500			{object}	error	"Failed to delete workout session"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/workout/{sessionID} [delete]
 func (app *application) deleteWorkoutSessionHandler(c *fiber.Ctx) error {
 	userID, sessionID := getUserIDFromContext(c), getSessionIDFromContext(c)
 	if userID == primitive.NilObjectID || sessionID == primitive.NilObjectID {
@@ -181,14 +274,30 @@ func (app *application) deleteWorkoutSessionHandler(c *fiber.Ctx) error {
 	})
 }
 
-// "/exercise/:exerciseID/sets"
-// adding a set
 type addSetPayload struct {
 	Weight    float32 `json:"weight"`
 	Reps      int16   `json:"reps"`
 	SetNumber int16   `json:"set_number"`
 }
 
+// AddSetToWorkout godoc
+//
+//	@Summary		Add a set to a workout exercise
+//	@Description	Record a completed set for an exercise in a workout
+//	@Tags			workout-sets
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string			true	"User ID"
+//	@Param			sessionID	path		string			true	"Session ID"
+//	@Param			exerciseID	path		string			true	"Exercise ID"
+//	@Param			set			body		addSetPayload	true	"Set information"
+//	@Success		200			{object}	string			"Set added to workout successfully"
+//	@Failure		400			{object}	error			"Invalid request body or IDs"
+//	@Failure		500			{object}	error			"Failed to add set to workout"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/users/{userID}/workout/{sessionID}/exercise/{exerciseID}/sets [post]
 func (app *application) addSetToWorkoutHandler(c *fiber.Ctx) error {
 	userID, sessionID, exerciseID := getUserIDFromContext(c), getSessionIDFromContext(c), getExerciseIDFromContext(c)
 	if userID == primitive.NilObjectID || sessionID == primitive.NilObjectID || exerciseID == primitive.NilObjectID {

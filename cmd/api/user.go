@@ -9,7 +9,22 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// CREATE Handler
+// CreateUser godoc
+//
+//	@Summary		Create a new user
+//
+//	@Description	Register a new user in the system with username, email, and other basic information
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		store.User	true	"User information including username, email, and password"
+//
+//	@Success		201		{object}	error		"Returns the created user ID"
+//	@Failure		400		{object}	error		"Invalid request body"
+//	@Failure		500		{object}	error		"Failed to create user"
+//	@Security		ApiKeyAuth
+//
+//	@Router			/user [post]
 func (app *application) createUserHandler(c *fiber.Ctx) error {
 	var user store.User
 
@@ -30,7 +45,22 @@ func (app *application) createUserHandler(c *fiber.Ctx) error {
 	})
 }
 
-// GET Handler
+// GetUser godoc
+//
+//	@Summary		Get user by ID
+//	@Description	Retrieve a user's information by their ID
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID	path		string		true	"User ID"
+//	@Success		200		{object}	store.User	"User information"
+//	@Failure		400		{object}	error		"Invalid user ID format"
+//	@Failure		404		{object}	error		"User not found"
+//	@Failure		500		{object}	error		"Failed to fetch user"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/user/{userID} [get]
 func (app *application) getUserHandler(c *fiber.Ctx) error {
 
 	userIDStr := c.Params("userID")
@@ -74,7 +104,23 @@ type updateUserPayload struct {
 	ExpectedVersion int16   `json:"expected_version"`
 }
 
-// PATCH Handler
+// UpdateUser godoc
+//
+//	@Summary		Update user information
+//	@Description	Update one or more fields of a user's profile
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID		path		string				true	"User ID"
+//	@Param			userData	body		updateUserPayload	true	"Updated user information"
+//	@Success		200			{object}	error				"User updated successfully"
+//	@Failure		400			{object}	error				"Invalid request body or missing fields"
+//	@Failure		409			{object}	error				"Version conflict - record has been modified"
+//	@Failure		500			{object}	error				"Failed to update user"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/user/{userID} [patch]
 func (app *application) patchUserHandler(c *fiber.Ctx) error {
 	userIDStr := c.Params("userID")
 	userID, err := primitive.ObjectIDFromHex(userIDStr)
@@ -154,7 +200,21 @@ func (app *application) patchUserHandler(c *fiber.Ctx) error {
 	})
 }
 
-// DELETE Handler
+// DeleteUser godoc
+//
+//	@Summary		Delete a user
+//	@Description	Permanently remove a user from the system
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			userID	path		string	true	"User ID"
+//	@Success		200		{object}	error	"User was successfully deleted"
+//	@Failure		400		{object}	error	"Invalid user ID format"
+//	@Failure		500		{object}	error	"Failed to delete user"
+//
+// @Security		ApiKeyAuth
+//
+//	@Router			/user/{userID} [delete]
 func (app *application) deleteUserHandler(c *fiber.Ctx) error {
 	userIDStr := c.Params("userID")
 

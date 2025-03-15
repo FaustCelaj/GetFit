@@ -34,7 +34,7 @@ type dbConfig struct {
 func (app *application) mount() *fiber.App {
 	docs.SwaggerInfo.Version = version
 	docs.SwaggerInfo.Host = app.config.apiURL
-	docs.SwaggerInfo.BasePath = "/v1"
+	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	// Create a new Fiber instance
 	fiberApp := fiber.New(fiber.Config{
@@ -57,7 +57,7 @@ func (app *application) mount() *fiber.App {
 
 	// Health Check
 	api.Get("/health", app.healthCheckHandler)
-	docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
+	docsURL := fmt.Sprintf("http://%s/api/v1/swagger/doc.json", app.config.apiURL)
 	api.Get("/swagger/*", swagger.New(swagger.Config{
 		URL: docsURL,
 	}))
