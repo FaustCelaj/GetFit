@@ -14,7 +14,7 @@ type User struct {
 	ID        primitive.ObjectID `bson:"_id" json:"id"`
 	Username  string             `bson:"username" json:"username"`
 	Email     string             `bson:"email" json:"email"`
-	Password  string             `bson:"password_hash" json:"password_hash"`
+	Password  Password           `bson:"-" json:"-"`
 	FirstName string             `bson:"first_name" json:"first_name"`
 	LastName  string             `bson:"last_name" json:"last_name"`
 	Age       int8               `bson:"age" json:"age"`
@@ -25,27 +25,51 @@ type User struct {
 	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
+type Password struct {
+	text string
+	hash []byte
+}
+
+func (p *Password) set(text string) error {
+	hash, err := bycrpt.GenerateFromPassword([]byte(text), bycrpt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	p.text = &text
+	p.hash = hash
+	return nil
+}
+
 type UserStore struct {
 	db *mongo.Database
 }
 
 const userCollection = "user"
 
-// GET user by ID
-func (s *UserStore) GetByID(ctx context.Context, userID primitive.ObjectID) (*User, error) {
-	user := &User{}
-
+func (s *UserStore) CheckUserExists(ctx context.Context, username, email string) (bool, string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"_id": userID}
-
-	err := s.db.Collection(userCollection).FindOne(ctx, filter).Decode(user)
+	usernameFilter := bson.M{"username": username}
+	usernameCount, err := s.db.Collection(userCollection).CountDocuments(ctx, usernameFilter)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		return false, "", fmt.Errorf("failed to check username: %w", err)
+	}
+	if usernameCount > 0 {
+		return true, "username", nil
 	}
 
-	return user, nil
+	emailFilter := bson.M{"email": email}
+	emailCount, err := s.db.Collection(userCollection).CountDocuments(ctx, emailFilter)
+	if err != nil {
+		return false, "", fmt.Errorf("failed to check username: %w", err)
+	}
+	if emailCount > 0 {
+		return true, "username", nil
+	}
+
+	return false, "", nil
 }
 
 // CREATING user
@@ -68,6 +92,23 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 	}
 
 	return nil
+}
+
+// GET user by ID
+func (s *UserStore) GetByID(ctx context.Context, userID primitive.ObjectID) (*User, error) {
+	user := &User{}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": userID}
+
+	err := s.db.Collection(userCollection).FindOne(ctx, filter).Decode(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return user, nil
 }
 
 // UPDATING user
