@@ -67,14 +67,15 @@ func (app *application) mount() *fiber.App {
 		URL: docsURL,
 	}))
 
+	// Public Routes
+	auth := api.Group("/authentication")
+	auth.Post("/register", app.registerUserHandler)
+
 	user := api.Group("/user")
 	user.Get("/:userID", app.getUserHandler)
-	user.Post("/", app.createUserHandler)
+	// user.Post("/", app.createUserHandler)
 	user.Patch("/:userID", app.patchUserHandler)
 	user.Delete("/:userID", app.deleteUserHandler)
-
-	search := api.Group("/search")
-	search.Get("/:exerciseID", app.searchExerciseByIDHandler)
 
 	userScoped := api.Group("/users/:userID", app.userContextMiddleware())
 
@@ -120,5 +121,7 @@ func (app *application) mount() *fiber.App {
 	workoutSets := workoutSession.Group("/exercise/:exerciseID/sets", app.exerciseContextMiddleware())
 	workoutSets.Post("/", app.addSetToWorkoutHandler)
 
+	// search := api.Group("/search")
+	// search.Get("/:exerciseID", app.searchExerciseByIDHandler)
 	return fiberApp
 }
