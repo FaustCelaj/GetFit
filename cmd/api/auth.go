@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/FaustCelaj/GetFit.git/internal/store"
 	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
@@ -49,17 +51,42 @@ func (app *application) registerUserHandler(c *fiber.Ctx) error {
 		})
 	}
 
+	exists, field, err := app.store.Users.CheckUserExists(c.Context(), *payload.Username, *payload.Email)
+	if err != nil {
+		app.logger.Errorf("Error checking if user exists: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal server error",
+		})
+	}
+
+	if exists {
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"error": fmt.Sprintf("User with this %s already exists", field),
+		})
+	}
+
 	user := &store.User{
-		username: payload.Username,
-		email:    payload.Email,
+		Username: *payload.Username,
+		Email:    *payload.Email,
 	}
 
-	if err := user.Password.set(payload.Password); err != nil {
-		return nil
+	if err := user.SetPassword(*payload.Password); err != nil {
+		app.logger.Errorf("Error hashing password: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Internal server error",
+		})
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+	if err := app.store.Users.Create(c.Context(), user); err != nil {
+		app.logger.Errorf("Error creating user: %v", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create user",
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "User registered successfully",
+		"id":      user.ID.Hex(),
 	})
 }
 

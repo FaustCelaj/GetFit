@@ -2,19 +2,21 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
 	ID        primitive.ObjectID `bson:"_id" json:"id"`
 	Username  string             `bson:"username" json:"username"`
 	Email     string             `bson:"email" json:"email"`
-	Password  Password           `bson:"-" json:"-"`
+	Password  []byte             `bson:"password_hash" json:"-"`
 	FirstName string             `bson:"first_name" json:"first_name"`
 	LastName  string             `bson:"last_name" json:"last_name"`
 	Age       int8               `bson:"age" json:"age"`
@@ -26,19 +28,7 @@ type User struct {
 }
 
 type Password struct {
-	text string
 	hash []byte
-}
-
-func (p *Password) set(text string) error {
-	hash, err := bycrpt.GenerateFromPassword([]byte(text), bycrpt.DefaultCost)
-	if err != nil {
-		return err
-	}
-
-	p.text = &text
-	p.hash = hash
-	return nil
 }
 
 type UserStore struct {
@@ -46,6 +36,39 @@ type UserStore struct {
 }
 
 const userCollection = "user"
+
+func NewPassword(plaintext string) (Password, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(plaintext), bcrypt.DefaultCost)
+	if err != nil {
+		return Password{}, err
+	}
+	return Password{hash: hash}, nil
+}
+
+func (p Password) Matches(plaintext string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintext))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (u *User) SetPassword(plaintext string) error {
+	p, err := NewPassword(plaintext)
+	if err != nil {
+		return err
+	}
+	u.Password = p.hash
+	return nil
+}
+
+func (u *User) CheckPassword(plaintext string) (bool, error) {
+	p := Password{hash: u.Password}
+	return p.Matches(plaintext)
+}
 
 func (s *UserStore) CheckUserExists(ctx context.Context, username, email string) (bool, string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -63,13 +86,32 @@ func (s *UserStore) CheckUserExists(ctx context.Context, username, email string)
 	emailFilter := bson.M{"email": email}
 	emailCount, err := s.db.Collection(userCollection).CountDocuments(ctx, emailFilter)
 	if err != nil {
-		return false, "", fmt.Errorf("failed to check username: %w", err)
+		return false, "", fmt.Errorf("failed to check email: %w", err)
 	}
 	if emailCount > 0 {
-		return true, "username", nil
+		return true, "email", nil
 	}
 
 	return false, "", nil
+}
+
+func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
+	user := &User{}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"email": email}
+
+	err := s.db.Collection(userCollection).FindOne(ctx, filter).Decode(user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
+	}
+
+	return user, nil
 }
 
 // CREATING user
