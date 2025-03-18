@@ -18,6 +18,8 @@ var (
 
 type Storage struct {
 	Users interface {
+		CheckUserExists(context.Context, string, string) (bool, string, error)
+		GetByEmail(context.Context, string) (*User, error)
 		Create(context.Context, *User) error
 		GetByID(context.Context, primitive.ObjectID) (*User, error)
 		Update(context.Context, primitive.ObjectID, map[string]interface{}, int16) error
